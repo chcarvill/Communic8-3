@@ -1,0 +1,687 @@
+window.__COMMUNIC8_SEED_DATA__ = {
+  "categories": [
+    {
+      "id": "outreach-cold",
+      "label": "Direct outreach — cold",
+      "color": "coral"
+    },
+    {
+      "id": "outreach-warm",
+      "label": "Direct outreach — warm",
+      "color": "amber"
+    },
+    {
+      "id": "content-written",
+      "label": "Content — written",
+      "color": "teal"
+    },
+    {
+      "id": "content-video",
+      "label": "Content — video & audio",
+      "color": "blue"
+    },
+    {
+      "id": "paid",
+      "label": "Paid",
+      "color": "gray"
+    },
+    {
+      "id": "partnerships",
+      "label": "Partnerships & referral",
+      "color": "purple"
+    },
+    {
+      "id": "community",
+      "label": "Community & presence",
+      "color": "green"
+    },
+    {
+      "id": "retention",
+      "label": "Retention & reactivation",
+      "color": "pink"
+    },
+    {
+      "id": "seo",
+      "label": "SEO & discoverability",
+      "color": "gray"
+    },
+    {
+      "id": "bigger-video",
+      "label": "Bigger video formats",
+      "color": "blue"
+    },
+    {
+      "id": "media",
+      "label": "Broadcast & media",
+      "color": "coral"
+    },
+    {
+      "id": "bigger-events",
+      "label": "Bigger live & event formats",
+      "color": "amber"
+    },
+    {
+      "id": "bigger-written",
+      "label": "Bigger written formats",
+      "color": "teal"
+    },
+    {
+      "id": "community-build",
+      "label": "Community-building formats",
+      "color": "green"
+    },
+    {
+      "id": "stranger-outreach",
+      "label": "Stranger-er outreach",
+      "color": "coral"
+    },
+    {
+      "id": "novel-digital",
+      "label": "Strange & novel digital",
+      "color": "purple"
+    },
+    {
+      "id": "borrowed-audience",
+      "label": "Borrowed audience",
+      "color": "pink"
+    },
+    {
+      "id": "status",
+      "label": "Status & authority",
+      "color": "amber"
+    },
+    {
+      "id": "old-school",
+      "label": "Old-school & unconventional",
+      "color": "gray"
+    },
+    {
+      "id": "experimental",
+      "label": "Weird & experimental",
+      "color": "purple"
+    },
+    {
+      "id": "live-experiential",
+      "label": "Live experiential & social",
+      "color": "teal"
+    }
+  ],
+  "ideas": [
+    {
+      "id": "i01",
+      "category": "outreach-cold",
+      "title": "Cold calling",
+      "description": "Calling people who don't know you yet, working through a list or the Do Not Call-compliant process."
+    },
+    {
+      "id": "i02",
+      "category": "outreach-cold",
+      "title": "Cold emailing",
+      "description": "Reaching out by email to people who haven't engaged with you before."
+    },
+    {
+      "id": "i03",
+      "category": "outreach-cold",
+      "title": "Cold DMs",
+      "description": "Direct messages on LinkedIn, Instagram, or Facebook to people outside your network."
+    },
+    {
+      "id": "i04",
+      "category": "outreach-cold",
+      "title": "In-person approach",
+      "description": "Approaching people directly in public locations (e.g. Melbourne CBD spots already scoped)."
+    },
+    {
+      "id": "i05",
+      "category": "outreach-cold",
+      "title": "Voicemail / voice notes",
+      "description": "Leaving a voice note or voicemail as a softer cold touch than a live call."
+    },
+    {
+      "id": "i06",
+      "category": "outreach-cold",
+      "title": "Thoughtful comments on strangers' posts",
+      "description": "Genuinely useful comments in relevant groups as a way into a conversation."
+    },
+    {
+      "id": "i07",
+      "category": "outreach-warm",
+      "title": "Message existing contacts",
+      "description": "Tell people you already know what you're building and ask if they know someone burnt out."
+    },
+    {
+      "id": "i08",
+      "category": "outreach-warm",
+      "title": "Reconnect with old colleagues/clients",
+      "description": "Reach back out to people from past roles or past coaching relationships."
+    },
+    {
+      "id": "i09",
+      "category": "outreach-warm",
+      "title": "Ask for introductions",
+      "description": "Ask happy contacts to introduce you to someone who might need this."
+    },
+    {
+      "id": "i10",
+      "category": "outreach-warm",
+      "title": "Follow up with gone-quiet leads",
+      "description": "Check back in on past inquiries or no-shows who never converted."
+    },
+    {
+      "id": "i11",
+      "category": "outreach-warm",
+      "title": "Check in on past one-off clients",
+      "description": "Reach out to people you've coached once before to see how they're doing."
+    },
+    {
+      "id": "i12",
+      "category": "content-written",
+      "title": "LinkedIn posts",
+      "description": "Regular posts aimed at burnt-out professionals, where they already spend time."
+    },
+    {
+      "id": "i13",
+      "category": "content-written",
+      "title": "Twitter / X posts",
+      "description": "Shorter-form written posts on X."
+    },
+    {
+      "id": "i14",
+      "category": "content-written",
+      "title": "Blog or newsletter",
+      "description": "Longer-form writing published on your own platform."
+    },
+    {
+      "id": "i15",
+      "category": "content-written",
+      "title": "Comments on others' posts",
+      "description": "Genuinely useful comments that build visibility without pitching."
+    },
+    {
+      "id": "i16",
+      "category": "content-written",
+      "title": "Guest posts",
+      "description": "Writing for someone else's blog or newsletter to borrow their audience."
+    },
+    {
+      "id": "i17",
+      "category": "content-written",
+      "title": "Quote-card graphics",
+      "description": "Short insight turned into a simple shareable graphic."
+    },
+    {
+      "id": "i18",
+      "category": "content-written",
+      "title": "Anonymised case studies",
+      "description": "Client stories (anonymised) written up as content."
+    },
+    {
+      "id": "i19",
+      "category": "content-video",
+      "title": "Short-form video",
+      "description": "Talking to camera, no edits required — low production."
+    },
+    {
+      "id": "i20",
+      "category": "content-video",
+      "title": "Voice notes turned into audio clips",
+      "description": "Repurposing a voice note into a short shareable audio piece."
+    },
+    {
+      "id": "i21",
+      "category": "content-video",
+      "title": "Podcast (yours)",
+      "description": "Hosting your own recurring podcast."
+    },
+    {
+      "id": "i22",
+      "category": "content-video",
+      "title": "Podcast guesting",
+      "description": "Appearing as a guest on other people's podcasts in the niche."
+    },
+    {
+      "id": "i23",
+      "category": "content-video",
+      "title": "Webinars / live Q&As",
+      "description": "Live online sessions answering questions in real time."
+    },
+    {
+      "id": "i24",
+      "category": "content-video",
+      "title": "Client testimonials (recorded)",
+      "description": "Asking clients for a short recorded testimonial."
+    },
+    {
+      "id": "i25",
+      "category": "paid",
+      "title": "Facebook/Instagram lead ads",
+      "description": "Paid lead-generation ads on Meta platforms (already explored)."
+    },
+    {
+      "id": "i26",
+      "category": "paid",
+      "title": "LinkedIn ads",
+      "description": "Paid ads targeting professionals on LinkedIn."
+    },
+    {
+      "id": "i27",
+      "category": "paid",
+      "title": "Google ads",
+      "description": "Ads targeting people actively searching for burnout coaching."
+    },
+    {
+      "id": "i28",
+      "category": "paid",
+      "title": "Boost a high-performing post",
+      "description": "Putting paid spend behind organic content that's already working."
+    },
+    {
+      "id": "i29",
+      "category": "partnerships",
+      "title": "Reach out to GPs / psychologists",
+      "description": "Build relationships with referral sources who see burnt-out clients first."
+    },
+    {
+      "id": "i30",
+      "category": "partnerships",
+      "title": "Reach out to HR managers / recruiters",
+      "description": "People who already meet your audience professionally."
+    },
+    {
+      "id": "i31",
+      "category": "partnerships",
+      "title": "Free talk/workshop for a company",
+      "description": "Offer a free session to a business or association as a foot in the door."
+    },
+    {
+      "id": "i32",
+      "category": "partnerships",
+      "title": "Cross-promotion with other coaches",
+      "description": "Partner with coaches serving a different niche to swap audiences."
+    },
+    {
+      "id": "i33",
+      "category": "partnerships",
+      "title": "Affiliate-style referral arrangement",
+      "description": "Pay a referral fee to people who send clients your way."
+    },
+    {
+      "id": "i34",
+      "category": "community",
+      "title": "Networking events / meetups",
+      "description": "Attending industry meetups or business breakfasts."
+    },
+    {
+      "id": "i35",
+      "category": "community",
+      "title": "Relevant Facebook/LinkedIn groups",
+      "description": "Joining and genuinely participating in groups your audience is in."
+    },
+    {
+      "id": "i36",
+      "category": "community",
+      "title": "Host a small free event/workshop",
+      "description": "Run your own low-cost gathering."
+    },
+    {
+      "id": "i37",
+      "category": "community",
+      "title": "Speak somewhere (Rotary, business group)",
+      "description": "Volunteer to speak at an existing community organisation."
+    },
+    {
+      "id": "i38",
+      "category": "retention",
+      "title": "Check in with past clients",
+      "description": "A simple periodic touch-base with people you've already coached."
+    },
+    {
+      "id": "i39",
+      "category": "retention",
+      "title": "Ask past clients for referrals",
+      "description": "A direct, simple ask once trust is established."
+    },
+    {
+      "id": "i40",
+      "category": "retention",
+      "title": "Ask for testimonials/reviews",
+      "description": "Collect proof points that can become content later."
+    },
+    {
+      "id": "i41",
+      "category": "retention",
+      "title": "Re-engage old non-converted leads",
+      "description": "Reach out again to people who didn't convert the first time."
+    },
+    {
+      "id": "i42",
+      "category": "seo",
+      "title": "Simple website with clear positioning",
+      "description": "A site that states clearly who you help and how."
+    },
+    {
+      "id": "i43",
+      "category": "seo",
+      "title": "Google Business profile",
+      "description": "If relevant to how people might search for you locally."
+    },
+    {
+      "id": "i44",
+      "category": "seo",
+      "title": "Coach directory listings",
+      "description": "Getting listed in relevant directories where people search for coaches."
+    },
+    {
+      "id": "i45",
+      "category": "seo",
+      "title": "Optimise LinkedIn profile as a landing page",
+      "description": "Treat your profile itself as a conversion surface."
+    },
+    {
+      "id": "i46",
+      "category": "bigger-video",
+      "title": "Weekly YouTube livestream / show",
+      "description": "A recurring live format — interviews or live mini-coaching."
+    },
+    {
+      "id": "i47",
+      "category": "bigger-video",
+      "title": "Recurring YouTube series",
+      "description": "A consistent format and title, e.g. a named recurring segment."
+    },
+    {
+      "id": "i48",
+      "category": "bigger-video",
+      "title": "Guesting on other YouTube channels",
+      "description": "Appearing on established channels in the niche."
+    },
+    {
+      "id": "i49",
+      "category": "bigger-video",
+      "title": "Docu-style client transformation series",
+      "description": "Following a consenting client's journey over weeks or months."
+    },
+    {
+      "id": "i50",
+      "category": "bigger-video",
+      "title": "Reaction-style videos",
+      "description": "Responding to LinkedIn discourse or news about burnout/work culture."
+    },
+    {
+      "id": "i51",
+      "category": "bigger-video",
+      "title": "Behind-the-scenes / day-in-the-life series",
+      "description": "Building the coaching business itself as relatable content."
+    },
+    {
+      "id": "i52",
+      "category": "media",
+      "title": "Pitch as a guest expert (radio/TV)",
+      "description": "Local media segments about burnout or work culture."
+    },
+    {
+      "id": "i53",
+      "category": "media",
+      "title": "Opinion pieces for publications",
+      "description": "Writing for online or industry press."
+    },
+    {
+      "id": "i54",
+      "category": "media",
+      "title": "Expert source for journalists",
+      "description": "Services like Help A Reporter Out / Qwoted."
+    },
+    {
+      "id": "i55",
+      "category": "bigger-events",
+      "title": "Recurring free webinar series",
+      "description": "Monthly, same time, same format — building a returning audience."
+    },
+    {
+      "id": "i56",
+      "category": "bigger-events",
+      "title": "In-person workshop/talk at a venue",
+      "description": "A bigger one-off or recurring talk hosted somewhere real."
+    },
+    {
+      "id": "i57",
+      "category": "bigger-events",
+      "title": "Co-hosted panel discussion",
+      "description": "Panel with psychologists or HR leads on burnout."
+    },
+    {
+      "id": "i58",
+      "category": "bigger-written",
+      "title": "Book or self-published guide",
+      "description": "A long-term credibility asset and lead magnet."
+    },
+    {
+      "id": "i59",
+      "category": "bigger-written",
+      "title": "Structured email course",
+      "description": "An automated multi-day email sequence, e.g. 'spot burnout before it spots you'."
+    },
+    {
+      "id": "i60",
+      "category": "community-build",
+      "title": "Free Facebook/Discord community",
+      "description": "A space you seed and moderate for burnt-out professionals."
+    },
+    {
+      "id": "i61",
+      "category": "community-build",
+      "title": "Recurring challenge format",
+      "description": "e.g. a free 5-day reset challenge that runs periodically."
+    },
+    {
+      "id": "i62",
+      "category": "stranger-outreach",
+      "title": "Pitch local business owners directly",
+      "description": "Gyms, allied health clinics, co-working spaces."
+    },
+    {
+      "id": "i63",
+      "category": "stranger-outreach",
+      "title": "Speak at a school/uni careers night",
+      "description": "Reach graduating students about to enter high-stress careers."
+    },
+    {
+      "id": "i64",
+      "category": "stranger-outreach",
+      "title": "Stall at a wellness/careers/business expo",
+      "description": "A physical presence at a relevant expo."
+    },
+    {
+      "id": "i65",
+      "category": "stranger-outreach",
+      "title": "Flyers/posters in CBD buildings, gyms, stations",
+      "description": "Guerrilla-style physical print outreach."
+    },
+    {
+      "id": "i66",
+      "category": "stranger-outreach",
+      "title": "QR-code business card",
+      "description": "A simple physical-to-digital handoff for every interaction."
+    },
+    {
+      "id": "i67",
+      "category": "novel-digital",
+      "title": "Free interactive burnout quiz",
+      "description": "A self-assessment tool that captures emails as a lead magnet."
+    },
+    {
+      "id": "i68",
+      "category": "novel-digital",
+      "title": "Looser meme/relatable content account",
+      "description": "Funnier, looser content feeding into the serious offer."
+    },
+    {
+      "id": "i69",
+      "category": "novel-digital",
+      "title": "Referral/affiliate program with cash incentive",
+      "description": "Pay past clients for successful referrals."
+    },
+    {
+      "id": "i70",
+      "category": "novel-digital",
+      "title": "AI chatbot mini-diagnostic on website",
+      "description": "A quick interactive tool that books a call."
+    },
+    {
+      "id": "i71",
+      "category": "novel-digital",
+      "title": "Get featured in 'best coaches' listicles",
+      "description": "Directories or roundup articles."
+    },
+    {
+      "id": "i72",
+      "category": "novel-digital",
+      "title": "Reverse-engineer what already performs",
+      "description": "Study top content in the niche and make your own version."
+    },
+    {
+      "id": "i73",
+      "category": "borrowed-audience",
+      "title": "Get interviewed by other coaches/newsletters",
+      "description": "Even ones that are technically competitors."
+    },
+    {
+      "id": "i74",
+      "category": "borrowed-audience",
+      "title": "Co-run a webinar with a complementary business",
+      "description": "A financial advisor or therapist brings half the audience."
+    },
+    {
+      "id": "i75",
+      "category": "borrowed-audience",
+      "title": "Giveaway inside someone else's community",
+      "description": "A free session draw inside a larger existing audience."
+    },
+    {
+      "id": "i76",
+      "category": "status",
+      "title": "Public speaking competitions / TEDx-style stages",
+      "description": "Bigger stage opportunities for authority-building."
+    },
+    {
+      "id": "i77",
+      "category": "status",
+      "title": "Enter or sponsor industry awards",
+      "description": "Status-building through recognised awards."
+    },
+    {
+      "id": "i78",
+      "category": "status",
+      "title": "Regular column for a business publication",
+      "description": "An ongoing writing slot in an established outlet."
+    },
+    {
+      "id": "i79",
+      "category": "status",
+      "title": "Personal brand portfolio website",
+      "description": "A long-term proof-piece site."
+    },
+    {
+      "id": "i80",
+      "category": "status",
+      "title": "Results/case-study page",
+      "description": "A page built purely to be linked to from everywhere else."
+    },
+    {
+      "id": "i81",
+      "category": "old-school",
+      "title": "Letterbox drops in high-income suburbs",
+      "description": "Direct print outreach to targeted households."
+    },
+    {
+      "id": "i82",
+      "category": "old-school",
+      "title": "Print ads in niche publications",
+      "description": "Industry association newsletters or business magazines."
+    },
+    {
+      "id": "i83",
+      "category": "old-school",
+      "title": "Billboard or transit ad",
+      "description": "If budget ever allowed."
+    },
+    {
+      "id": "i84",
+      "category": "old-school",
+      "title": "Partner with corporate wellness/EAP providers",
+      "description": "Become the external coach they refer out to."
+    },
+    {
+      "id": "i85",
+      "category": "old-school",
+      "title": "Pitch HR departments for a paid workshop",
+      "description": "A workshop that becomes a pipeline of 1:1 referrals inside the company."
+    },
+    {
+      "id": "i86",
+      "category": "experimental",
+      "title": "Physical 'burnout pop-up'",
+      "description": "A one-day quiet space/experience in public as soft lead-gen."
+    },
+    {
+      "id": "i87",
+      "category": "experimental",
+      "title": "Collaborate with an artist/designer",
+      "description": "An illustrated zine on burnout that travels on its own."
+    },
+    {
+      "id": "i88",
+      "category": "experimental",
+      "title": "Small paid research survey + published results",
+      "description": "A PR/content piece built from original research on burnout."
+    },
+    {
+      "id": "i89",
+      "category": "live-experiential",
+      "title": "Recurring 'burnout social'",
+      "description": "Drinks/coffee meetup where people connect, no pitch involved."
+    },
+    {
+      "id": "i90",
+      "category": "live-experiential",
+      "title": "Structured practice night",
+      "description": "A condensed live version of coaching tools, run in pairs/small groups."
+    },
+    {
+      "id": "i91",
+      "category": "live-experiential",
+      "title": "Themed dinner/retreat evening",
+      "description": "Immersive evening themed around purpose or identity."
+    },
+    {
+      "id": "i92",
+      "category": "live-experiential",
+      "title": "Walk-and-talk event",
+      "description": "Outdoor, low-pressure, easier for first-timers."
+    },
+    {
+      "id": "i93",
+      "category": "live-experiential",
+      "title": "Career reinvention mixer",
+      "description": "Self-selecting event for people contemplating a change."
+    },
+    {
+      "id": "i94",
+      "category": "live-experiential",
+      "title": "Recurring supper/breakfast club",
+      "description": "Same time each month, building a returning crowd."
+    },
+    {
+      "id": "i95",
+      "category": "live-experiential",
+      "title": "Unconventional 'permission to let go' night",
+      "description": "Feeling-first format that opens the door to deeper conversation."
+    },
+    {
+      "id": "i96",
+      "category": "live-experiential",
+      "title": "Alumni night for past clients",
+      "description": "Past clients reconnect, swap progress, bring a friend."
+    }
+  ]
+};
