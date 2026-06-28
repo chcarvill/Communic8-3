@@ -373,7 +373,19 @@ function buildChildCardEl(child) {
       ${child.scheduledDate ? `<span class="unschedule-toggle" data-action="unschedule" data-child="${child.id}" title="Move back to Not yet scheduled">⤺</span>` : ""}
     </div>
     <div class="child-parent">${escapeHtml(idea ? idea.title : "Unknown idea")}</div>
+    <div class="schedule-row">
+      <label class="schedule-label">${child.scheduledDate ? "Scheduled" : "Schedule for…"}</label>
+      <input type="date" class="schedule-date-input" data-child="${child.id}" value="${child.scheduledDate || ""}" />
+    </div>
   `;
+
+  const dateInput = el.querySelector(".schedule-date-input");
+  dateInput.addEventListener("click", (e) => e.stopPropagation());
+  dateInput.addEventListener("change", (e) => {
+    child.scheduledDate = e.target.value || null;
+    saveToStorage();
+    render();
+  });
 
   el.addEventListener("dragstart", (e) => {
     dragPayload = { childId: child.id };
