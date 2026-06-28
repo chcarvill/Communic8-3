@@ -370,6 +370,7 @@ function buildChildCardEl(child) {
       <img src="${icon}" alt="" />
       ${label}
       <span class="done-toggle" data-action="toggle-done" data-child="${child.id}">${child.done ? "↺" : "✓"}</span>
+      ${child.scheduledDate ? `<span class="unschedule-toggle" data-action="unschedule" data-child="${child.id}" title="Move back to Not yet scheduled">⤺</span>` : ""}
     </div>
     <div class="child-parent">${escapeHtml(idea ? idea.title : "Unknown idea")}</div>
   `;
@@ -474,6 +475,17 @@ document.addEventListener("click", (e) => {
     const child = childById(toggleBtn.dataset.child);
     if (child) {
       child.done = !child.done;
+      saveToStorage();
+      render();
+    }
+    return;
+  }
+
+  const unscheduleBtn = e.target.closest("[data-action='unschedule']");
+  if (unscheduleBtn) {
+    const child = childById(unscheduleBtn.dataset.child);
+    if (child) {
+      child.scheduledDate = null;
       saveToStorage();
       render();
     }
