@@ -290,6 +290,7 @@ function wireCanvasDragController() {
     const card = e.target.closest(".idea-card");
     if (!card) return;
     if (e.target.closest(".spawn-btn")) return; // don't drag when clicking a button
+    if (e.target.closest(".child-card")) return; // don't drag the idea card when interacting with an embedded chip (date field, icons, or dragging the chip itself)
 
     const ideaId = card.dataset.ideaId;
     const pos = STATE.canvasPositions[ideaId];
