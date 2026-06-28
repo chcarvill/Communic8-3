@@ -15,7 +15,7 @@ const CATEGORY_COLOR_VARS = {
 let STATE = {
   categories: [],     // [{id, label, color}]
   ideas: [],           // [{id, category, title, description}]
-  children: [],         // [{id, ideaId, type: 'creation'|'application', done:false, scheduledDate: null|'YYYY-MM-DD', canvasX, canvasY}]
+  children: [],         // [{id, ideaId, type: 'creation'|'application', done:false, scheduledDate: null|'YYYY-MM-DD', parked:false, canvasX, canvasY}]
   canvasPositions: {}, // ideaId -> {x,y}  (idea card positions on canvas)
 };
 
@@ -252,7 +252,19 @@ function renderCanvas() {
           <img src="assets/icon-application.png" alt="" /> ${applicationChild ? "Doing ✓" : "Do it"}
         </button>
       </div>
+      <div class="idea-children"></div>
     `;
+
+    // a parked child (spawned, no date, dragged back onto the canvas) lives
+    // embedded right here on its parent idea card. Dragging it back to the
+    // staging row (or anywhere on the canvas, to re-park) toggles between
+    // the two; giving it a date sends it to the calendar from either place.
+    const childSlot = card.querySelector(".idea-children");
+    [creationChild, applicationChild].forEach((child) => {
+      if (child && child.parked && !child.scheduledDate) {
+        childSlot.appendChild(buildChildCardEl(child, { hideParent: true }));
+      }
+    });
 
     canvas.appendChild(card);
   });
@@ -266,26 +278,27 @@ function escapeHtml(str) {
 
 /* ---------------------------------------------------------- */
 /* Staging panel — holds spawned creation/application tiles    */
-/* that don't yet have a scheduledDate. This is their "home"    */
-/* between being spawned off an idea card and landing on a      */
-/* specific calendar day. Setting a date (here, or by dragging  */
-/* straight onto a calendar day) moves a tile out of staging;    */
-/* clearing the date brings it back here.                       */
+/* that are actively being scheduled: no scheduledDate yet, and */
+/* not parked back on their idea card. Setting a date (here, or */
+/* by dragging straight onto a calendar day) moves a tile out   */
+/* of staging; clearing a calendar date brings it back here.    */
+/* Dragging a staging tile onto the canvas parks it back on its */
+/* idea card instead — see wireCanvasDropTarget.                */
 /* ---------------------------------------------------------- */
 
 function renderStaging() {
   const row = document.getElementById("staging-row");
   row.innerHTML = "";
 
-  const unscheduled = STATE.children.filter((c) => !c.scheduledDate);
+  const active = STATE.children.filter((c) => !c.scheduledDate && !c.parked);
 
-  if (!unscheduled.length) {
+  if (!active.length) {
     const empty = document.createElement("div");
     empty.id = "staging-empty";
     empty.textContent = "Nothing waiting — spawned tiles will land here until you give them a date.";
     row.appendChild(empty);
   } else {
-    unscheduled.forEach((child) => row.appendChild(buildChildCardEl(child)));
+    active.forEach((child) => row.appendChild(buildChildCardEl(child)));
   }
 }
 
@@ -305,6 +318,7 @@ function wireStagingDropTarget() {
     const child = childById(dragPayload.childId);
     if (!child) return;
     child.scheduledDate = null;
+    child.parked = false; // dropping in staging always re-activates it, even if it came from being parked
     saveToStorage();
     render();
   });
@@ -377,6 +391,7 @@ function spawnChild(ideaId, type) {
     type, // 'creation' | 'application'
     done: false,
     scheduledDate: null,
+    parked: false, // false = sitting in the staging panel; true = parked back on its idea card
   };
   STATE.children.push(child);
   saveToStorage();
@@ -415,6 +430,7 @@ function buildChildCardEl(child, opts = {}) {
   dateInput.addEventListener("click", (e) => e.stopPropagation());
   dateInput.addEventListener("change", (e) => {
     child.scheduledDate = e.target.value || null;
+    if (child.scheduledDate) child.parked = false; // a dated tile is never "parked"
     saveToStorage();
     render();
   });
@@ -477,6 +493,7 @@ function renderCalendar() {
       const child = childById(dragPayload.childId);
       if (!child) return;
       child.scheduledDate = dropZone.dataset.date;
+      child.parked = false; // a dated tile is never "parked"
       saveToStorage();
       render();
     });
@@ -486,9 +503,9 @@ function renderCalendar() {
   });
 }
 
-/* dropping a scheduled card anywhere on the canvas sends it back to */
-/* the staging panel — no exact spot to aim for, since staging just  */
-/* lists every child with no scheduledDate.                          */
+/* dropping a card onto the canvas parks it back on its parent idea  */
+/* card — no exact spot to aim for, since a parked tile's position   */
+/* is always derived from its idea, not stored x/y.                  */
 function wireCanvasDropTarget() {
   const canvasWrap = document.getElementById("canvas-wrap");
   canvasWrap.addEventListener("dragover", (e) => e.preventDefault());
@@ -498,6 +515,7 @@ function wireCanvasDropTarget() {
     const child = childById(dragPayload.childId);
     if (!child) return;
     child.scheduledDate = null;
+    child.parked = true;
     saveToStorage();
     render();
   });
@@ -532,6 +550,7 @@ document.addEventListener("click", (e) => {
     const child = childById(unscheduleBtn.dataset.child);
     if (child) {
       child.scheduledDate = null;
+      child.parked = false; // unscheduling sends it to the staging panel, matching its tooltip
       saveToStorage();
       render();
     }

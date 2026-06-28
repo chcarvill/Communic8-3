@@ -217,14 +217,17 @@
   /* ── Staging panel (between canvas and calendar) ───────────── */
   /* Holds spawned creation/application tiles that don't yet have  */
   /* a scheduledDate — their "waiting room" before the calendar.   */
+  /* flex-basis is auto and grows with content (a full child-card  */
+  /* is ~110-140px tall); min/max-height bound it but never clip a */
+  /* card, since a clipped card is an unreachable drop target.     */
   #staging-wrap {
     flex: 0 0 auto;
     display: flex;
     flex-direction: column;
     background: var(--paper-dim);
     border-bottom: 1px solid var(--line);
-    min-height: 64px;
-    max-height: 220px;
+    min-height: 150px;
+    max-height: 280px;
   }
 
   #staging-header {
@@ -253,9 +256,10 @@
     display: flex;
     gap: 10px;
     align-items: flex-start;
-    padding: 0 20px 12px;
+    padding: 0 20px 14px;
     overflow-x: auto;
-    overflow-y: hidden;
+    overflow-y: auto;
+    min-height: 64px;
   }
 
   #staging-row.drag-over {
