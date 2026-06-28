@@ -168,7 +168,6 @@ function weekDays(weekStart) {
 function render() {
   renderStats();
   renderCanvas();
-  renderTray();
   renderCalendar();
 }
 
@@ -252,7 +251,18 @@ function renderCanvas() {
           <img src="assets/icon-application.png" alt="" /> ${applicationChild ? "Doing ✓" : "Do it"}
         </button>
       </div>
+      <div class="idea-children"></div>
     `;
+
+    // any unscheduled creation/application child lives right here on its
+    // parent idea card — this is its "home". Scheduling it (date field or
+    // drag-to-calendar) moves it out; clearing the schedule brings it back.
+    const childSlot = card.querySelector(".idea-children");
+    [creationChild, applicationChild].forEach((child) => {
+      if (child && !child.scheduledDate) {
+        childSlot.appendChild(buildChildCardEl(child, { hideParent: true }));
+      }
+    });
 
     canvas.appendChild(card);
   });
@@ -337,25 +347,10 @@ function spawnChild(ideaId, type) {
 }
 
 /* ---------------------------------------------------------- */
-/* Tray (unscheduled children)                                   */
+/* Child card builder (used on idea cards and on the calendar)  */
 /* ---------------------------------------------------------- */
 
-function renderTray() {
-  const wrap = document.getElementById("tray-items");
-  wrap.innerHTML = "";
-  const unscheduled = STATE.children.filter((c) => !c.scheduledDate);
-
-  if (!unscheduled.length) {
-    wrap.innerHTML = `<span style="font-size:12px; color:var(--ink-soft); font-style:italic;">Nothing waiting — spawn a "Build it" or "Do it" card from any idea above.</span>`;
-    return;
-  }
-
-  unscheduled.forEach((child) => {
-    wrap.appendChild(buildChildCardEl(child));
-  });
-}
-
-function buildChildCardEl(child) {
+function buildChildCardEl(child, opts = {}) {
   const idea = ideaById(child.ideaId);
   const el = document.createElement("div");
   el.className = `child-card ${child.type} ${child.done ? "done" : ""}`;
@@ -370,9 +365,9 @@ function buildChildCardEl(child) {
       <img src="${icon}" alt="" />
       ${label}
       <span class="done-toggle" data-action="toggle-done" data-child="${child.id}">${child.done ? "↺" : "✓"}</span>
-      ${child.scheduledDate ? `<span class="unschedule-toggle" data-action="unschedule" data-child="${child.id}" title="Move back to Not yet scheduled">⤺</span>` : ""}
+      ${child.scheduledDate ? `<span class="unschedule-toggle" data-action="unschedule" data-child="${child.id}" title="Move back to its idea card">⤺</span>` : ""}
     </div>
-    <div class="child-parent">${escapeHtml(idea ? idea.title : "Unknown idea")}</div>
+    ${opts.hideParent ? "" : `<div class="child-parent">${escapeHtml(idea ? idea.title : "Unknown idea")}</div>`}
     <div class="schedule-row">
       <label class="schedule-label">${child.scheduledDate ? "Scheduled" : "Schedule for…"}</label>
       <input type="date" class="schedule-date-input" data-child="${child.id}" value="${child.scheduledDate || ""}" />
@@ -454,11 +449,13 @@ function renderCalendar() {
   });
 }
 
-/* allow dropping back onto the unscheduled tray */
-function wireTrayDropTarget() {
-  const tray = document.getElementById("unscheduled-tray");
-  tray.addEventListener("dragover", (e) => e.preventDefault());
-  tray.addEventListener("drop", (e) => {
+/* dropping a scheduled card anywhere on the canvas sends it back to */
+/* live on its parent idea card — no exact spot to aim for, since its */
+/* "home" position is always derived from its idea, not stored x/y.  */
+function wireCanvasDropTarget() {
+  const canvasWrap = document.getElementById("canvas-wrap");
+  canvasWrap.addEventListener("dragover", (e) => e.preventDefault());
+  canvasWrap.addEventListener("drop", (e) => {
     e.preventDefault();
     if (!dragPayload) return;
     const child = childById(dragPayload.childId);
@@ -540,7 +537,7 @@ function wireToolbar() {
     const splitRect = document.getElementById("main-split").getBoundingClientRect();
     const fromTop = e.clientY - splitRect.top;
     const minH = 140;
-    const maxH = splitRect.height - minH - 60; // leave room for calendar + tray
+    const maxH = splitRect.height - minH - 60; // leave room for calendar
     const clamped = Math.max(minH, Math.min(maxH, fromTop));
     canvasWrap.style.flex = `0 0 ${clamped}px`;
     calendarWrap.style.flex = `1 1 auto`;
@@ -592,7 +589,7 @@ function wireToolbar() {
 /* ---------------------------------------------------------- */
 
 function init() {
-  wireTrayDropTarget();
+  wireCanvasDropTarget();
   wireToolbar();
   wireCanvasDragController();
   boot();

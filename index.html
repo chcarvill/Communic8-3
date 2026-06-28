@@ -447,32 +447,17 @@
     cursor: pointer;
   }
 
-  /* canvas tray for unscheduled children */
-  #unscheduled-tray {
-    flex: 0 0 auto;
-    border-top: 1px solid var(--line);
-    background: var(--paper-dim);
-    padding: 8px 16px;
+  /* unscheduled creation/application chips embedded right on their   */
+  /* parent idea card — this is their "home" when not on the calendar */
+  .idea-card .idea-children {
+    margin-top: 8px;
     display: flex;
-    align-items: center;
-    gap: 10px;
-    overflow-x: auto;
-    min-height: 50px;
+    flex-direction: column;
+    gap: 6px;
   }
-  #unscheduled-tray .tray-label {
-    font-family: var(--mono);
-    font-size: 10.5px;
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-    color: var(--ink-soft);
-    flex: 0 0 auto;
+  .idea-card .idea-children .child-card {
+    width: 100%;
   }
-  #unscheduled-tray .tray-items {
-    display: flex;
-    gap: 8px;
-    flex: 1 1 auto;
-  }
-  #unscheduled-tray .child-card { flex: 0 0 auto; width: 170px; }
 
   /* ── Modal for adding a new idea ───────────────────────── */
   #modal-overlay {
@@ -554,11 +539,6 @@
   <div id="main-split">
     <div id="canvas-wrap">
       <div id="canvas"></div>
-    </div>
-
-    <div id="unscheduled-tray">
-      <span class="tray-label">Not yet scheduled</span>
-      <div class="tray-items" id="tray-items"></div>
     </div>
 
     <div id="divider"></div>
