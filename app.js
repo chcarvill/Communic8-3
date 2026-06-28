@@ -168,6 +168,7 @@ function weekDays(weekStart) {
 function render() {
   renderStats();
   renderCanvas();
+  renderStaging();
   renderCalendar();
 }
 
@@ -251,18 +252,7 @@ function renderCanvas() {
           <img src="assets/icon-application.png" alt="" /> ${applicationChild ? "Doing ✓" : "Do it"}
         </button>
       </div>
-      <div class="idea-children"></div>
     `;
-
-    // any unscheduled creation/application child lives right here on its
-    // parent idea card — this is its "home". Scheduling it (date field or
-    // drag-to-calendar) moves it out; clearing the schedule brings it back.
-    const childSlot = card.querySelector(".idea-children");
-    [creationChild, applicationChild].forEach((child) => {
-      if (child && !child.scheduledDate) {
-        childSlot.appendChild(buildChildCardEl(child, { hideParent: true }));
-      }
-    });
 
     canvas.appendChild(card);
   });
@@ -272,6 +262,52 @@ function escapeHtml(str) {
   const div = document.createElement("div");
   div.textContent = str;
   return div.innerHTML;
+}
+
+/* ---------------------------------------------------------- */
+/* Staging panel — holds spawned creation/application tiles    */
+/* that don't yet have a scheduledDate. This is their "home"    */
+/* between being spawned off an idea card and landing on a      */
+/* specific calendar day. Setting a date (here, or by dragging  */
+/* straight onto a calendar day) moves a tile out of staging;    */
+/* clearing the date brings it back here.                       */
+/* ---------------------------------------------------------- */
+
+function renderStaging() {
+  const row = document.getElementById("staging-row");
+  row.innerHTML = "";
+
+  const unscheduled = STATE.children.filter((c) => !c.scheduledDate);
+
+  if (!unscheduled.length) {
+    const empty = document.createElement("div");
+    empty.id = "staging-empty";
+    empty.textContent = "Nothing waiting — spawned tiles will land here until you give them a date.";
+    row.appendChild(empty);
+  } else {
+    unscheduled.forEach((child) => row.appendChild(buildChildCardEl(child)));
+  }
+}
+
+/* wired once on init — #staging-row itself is reused across renders */
+/* (only its contents are replaced), so listeners go here, not above. */
+function wireStagingDropTarget() {
+  const row = document.getElementById("staging-row");
+  row.addEventListener("dragover", (e) => {
+    e.preventDefault();
+    row.classList.add("drag-over");
+  });
+  row.addEventListener("dragleave", () => row.classList.remove("drag-over"));
+  row.addEventListener("drop", (e) => {
+    e.preventDefault();
+    row.classList.remove("drag-over");
+    if (!dragPayload) return;
+    const child = childById(dragPayload.childId);
+    if (!child) return;
+    child.scheduledDate = null;
+    saveToStorage();
+    render();
+  });
 }
 
 /* ---------------------------------------------------------- */
@@ -366,7 +402,7 @@ function buildChildCardEl(child, opts = {}) {
       <img src="${icon}" alt="" />
       ${label}
       <span class="done-toggle" data-action="toggle-done" data-child="${child.id}">${child.done ? "↺" : "✓"}</span>
-      ${child.scheduledDate ? `<span class="unschedule-toggle" data-action="unschedule" data-child="${child.id}" title="Move back to its idea card">⤺</span>` : ""}
+      ${child.scheduledDate ? `<span class="unschedule-toggle" data-action="unschedule" data-child="${child.id}" title="Clear date — sends it back to the staging panel">⤺</span>` : ""}
     </div>
     ${opts.hideParent ? "" : `<div class="child-parent">${escapeHtml(idea ? idea.title : "Unknown idea")}</div>`}
     <div class="schedule-row">
@@ -451,8 +487,8 @@ function renderCalendar() {
 }
 
 /* dropping a scheduled card anywhere on the canvas sends it back to */
-/* live on its parent idea card — no exact spot to aim for, since its */
-/* "home" position is always derived from its idea, not stored x/y.  */
+/* the staging panel — no exact spot to aim for, since staging just  */
+/* lists every child with no scheduledDate.                          */
 function wireCanvasDropTarget() {
   const canvasWrap = document.getElementById("canvas-wrap");
   canvasWrap.addEventListener("dragover", (e) => e.preventDefault());
@@ -523,9 +559,10 @@ function wireToolbar() {
     renderCalendar();
   });
 
-  /* Divider drag-to-resize between canvas and calendar */
+  /* Divider drag-to-resize between canvas and the staging/calendar area below */
   const divider = document.getElementById("divider");
   const canvasWrap = document.getElementById("canvas-wrap");
+  const stagingWrap = document.getElementById("staging-wrap");
   const calendarWrap = document.getElementById("calendar-wrap");
   let resizing = false;
 
@@ -537,8 +574,9 @@ function wireToolbar() {
     if (!resizing) return;
     const splitRect = document.getElementById("main-split").getBoundingClientRect();
     const fromTop = e.clientY - splitRect.top;
+    const stagingH = stagingWrap.getBoundingClientRect().height;
     const minH = 140;
-    const maxH = splitRect.height - minH - 60; // leave room for calendar
+    const maxH = splitRect.height - minH - stagingH - 60; // leave room for staging panel + calendar
     const clamped = Math.max(minH, Math.min(maxH, fromTop));
     canvasWrap.style.flex = `0 0 ${clamped}px`;
     calendarWrap.style.flex = `1 1 auto`;
@@ -591,6 +629,7 @@ function wireToolbar() {
 
 function init() {
   wireCanvasDropTarget();
+  wireStagingDropTarget();
   wireToolbar();
   wireCanvasDragController();
   boot();
