@@ -151,6 +151,18 @@
   .legend-dot.creation { background: var(--sage); }
   .legend-dot.application { background: var(--clay); }
 
+  #email-actions {
+    display: flex;
+    gap: 8px;
+    margin-left: 14px;
+    padding-left: 14px;
+    border-left: 1px solid var(--line);
+  }
+  #email-actions .btn {
+    font-size: 12px;
+    padding: 6px 11px;
+  }
+
   /* ── Main split: canvas (top) / calendar (bottom) ──────────── */
   #main-split {
     flex: 1 1 auto;
@@ -306,6 +318,26 @@
   #calendar-nav { display: flex; gap: 6px; align-items: center; }
   #calendar-nav .btn { padding: 4px 10px; font-size: 12px; }
 
+  #view-toggle {
+    display: flex;
+    border: 1px solid var(--line);
+    border-radius: 7px;
+    overflow: hidden;
+    margin-right: 4px;
+  }
+  .view-toggle-btn {
+    border: none;
+    border-radius: 0;
+    padding: 4px 12px;
+    font-size: 12px;
+  }
+  .view-toggle-btn:hover { background: var(--sage-tint); }
+  .view-toggle-btn.active {
+    background: var(--sage);
+    color: white;
+  }
+  .view-toggle-btn.active:hover { background: var(--sage-dark); }
+
   #calendar-grid {
     flex: 1 1 auto;
     display: grid;
@@ -359,6 +391,92 @@
     outline: 2px dashed var(--sage);
     outline-offset: -4px;
   }
+
+  /* ── Month view ─────────────────────────────────────────── */
+  #calendar-month-grid {
+    flex: 1 1 auto;
+    overflow-y: auto;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .month-weekday-row {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    flex: 0 0 auto;
+    border-bottom: 1px solid var(--line);
+    background: var(--paper-dim);
+    position: sticky;
+    top: 0;
+  }
+  .month-weekday-row span {
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--ink-soft);
+    padding: 6px 8px;
+    text-align: left;
+  }
+
+  .month-weeks {
+    flex: 1 1 auto;
+    display: flex;
+    flex-direction: column;
+  }
+  .month-week-row {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    flex: 1 1 auto;
+    min-height: 78px;
+  }
+
+  .month-cell {
+    border-right: 1px solid var(--line);
+    border-bottom: 1px solid var(--line);
+    padding: 5px 6px;
+    cursor: pointer;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    transition: background 0.12s;
+  }
+  .month-cell:hover { background: var(--sage-tint); }
+  .month-cell:nth-child(7n) { border-right: none; }
+  .month-cell.outside-month { opacity: 0.4; }
+  .month-cell.today { background: var(--sage-tint); }
+
+  .month-cell .month-date {
+    font-family: var(--serif);
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--ink);
+    flex: 0 0 auto;
+  }
+
+  .month-cell .month-dots {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 3px;
+  }
+  .month-dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    flex: 0 0 auto;
+  }
+  .month-dot.creation { background: var(--sage); }
+  .month-dot.application { background: var(--clay); }
+  .month-dot.done { opacity: 0.4; }
+
+  .month-cell .month-overflow {
+    font-size: 10px;
+    color: var(--ink-soft);
+    font-family: var(--mono);
+  }
+
+
 
   /* ── Idea cards (canvas) ────────────────────────────────── */
   .idea-card {
@@ -576,8 +694,132 @@
   ::-webkit-scrollbar-track { background: transparent; }
   ::-webkit-scrollbar-thumb { background: var(--line); border-radius: 6px; }
   ::-webkit-scrollbar-thumb:hover { background: var(--ink-soft); }
+
+  /* ── Mobile: normal scrolling page instead of fixed app-shell ──── */
+  /* Desktop uses a fixed-height, no-scroll shell with internal panes  */
+  /* sized by JS-driven flex-basis (the divider drag). On a phone      */
+  /* there's no room for canvas + staging + calendar to all fit at a   */
+  /* usable size at once, so below this width we drop the fixed       */
+  /* height/overflow entirely and let each section take its natural   */
+  /* height, stacked in one normal scrolling page.                    */
+  @media (max-width: 768px) {
+    html, body {
+      height: auto;
+      overflow: visible;
+    }
+
+    #app {
+      height: auto;
+      min-height: 100vh;
+    }
+
+    header {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 8px;
+      padding: 16px 18px 12px;
+    }
+    header .stats {
+      flex-wrap: wrap;
+      gap: 10px 16px;
+    }
+
+    #toolbar {
+      padding: 10px 18px;
+    }
+    #search { width: 100%; }
+    .toolbar-spacer { flex: 0 0 100%; height: 0; }
+    .legend { width: 100%; justify-content: flex-start; }
+    #email-actions {
+      width: 100%;
+      margin-left: 0;
+      padding-left: 0;
+      border-left: none;
+      border-top: 1px solid var(--line);
+      padding-top: 10px;
+      margin-top: 4px;
+    }
+
+    #main-split {
+      flex: 1 1 auto;
+      display: block; /* stop being a flex column with computed pane heights */
+      height: auto;
+      overflow: visible;
+    }
+
+    #canvas-wrap {
+      flex: none !important; /* override any inline px height set by the desktop divider-drag JS */
+      height: 60vh;
+      min-height: 320px;
+      max-height: none;
+    }
+
+    /* the divider is a desktop-only drag-to-resize handle between two */
+    /* internally-scrolling panes; that interaction doesn't apply once  */
+    /* sections stack and scroll with the page, so hide it on mobile.   */
+    #divider {
+      display: none;
+    }
+
+    #staging-wrap {
+      flex: none !important;
+      min-height: 0;
+      max-height: none;
+    }
+    #staging-row {
+      flex-wrap: wrap;
+      overflow-x: visible;
+      overflow-y: visible;
+    }
+    #staging-row .child-card {
+      width: 100%;
+    }
+
+    #calendar-wrap {
+      flex: none !important;
+      min-height: 0;
+      height: auto;
+    }
+    #calendar-grid {
+      /* day columns side-by-side become unreadably thin on a phone; */
+      /* stack the week as 7 full-width rows instead, each tall      */
+      /* enough to actually show its cards without being clipped.   */
+      display: block;
+      overflow-y: visible;
+    }
+    .day-col {
+      border-right: none;
+      border-bottom: 1px solid var(--line);
+      min-height: 0;
+    }
+    .day-col:last-child { border-bottom: none; }
+    .day-col-header {
+      position: static;
+      display: flex;
+      align-items: baseline;
+      gap: 8px;
+      padding: 10px 14px 8px;
+    }
+    .day-drop-zone {
+      min-height: 56px;
+      padding: 6px 14px 14px;
+    }
+
+    /* month view stays a real grid on mobile (it's compact dots, not  */
+    /* full cards), just with tighter cells and no hover affordance.   */
+    .month-week-row { min-height: 58px; }
+    .month-cell { padding: 4px 4px; }
+    .month-weekday-row span { padding: 5px 4px; font-size: 9px; }
+    #calendar-header {
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+    #calendar-nav { flex-wrap: wrap; gap: 6px; }
+  }
 </style>
 </head>
+
+
 <body>
 
 <div id="app">
@@ -597,6 +839,10 @@
     <div class="legend">
       <span class="legend-item"><span class="legend-dot creation"></span> Creation</span>
       <span class="legend-item"><span class="legend-dot application"></span> Application</span>
+    </div>
+    <div id="email-actions">
+      <button class="btn" id="btn-email-calendar" title="Email what's currently on the calendar">✉ Calendar</button>
+      <button class="btn" id="btn-email-board" title="Email a full backup of the whole board">✉ Full board</button>
     </div>
   </div>
 
@@ -619,12 +865,17 @@
       <div id="calendar-header">
         <div class="week-label" id="week-label">This week</div>
         <div id="calendar-nav">
+          <div id="view-toggle">
+            <button class="btn view-toggle-btn active" id="btn-view-week">Week</button>
+            <button class="btn view-toggle-btn" id="btn-view-month">Month</button>
+          </div>
           <button class="btn" id="btn-prev-week">‹ Prev</button>
           <button class="btn" id="btn-today">Today</button>
           <button class="btn" id="btn-next-week">Next ›</button>
         </div>
       </div>
       <div id="calendar-grid"></div>
+      <div id="calendar-month-grid" style="display:none;"></div>
     </div>
   </div>
 

@@ -20,6 +20,8 @@ let STATE = {
 };
 
 let viewWeekStart = startOfWeek(new Date());
+let viewMonthStart = startOfMonth(new Date());
+let calendarViewMode = "week"; // 'week' | 'month'
 let dragPayload = null; // { childId } while dragging
 
 /* ---------------------------------------------------------- */
@@ -159,6 +161,38 @@ function weekDays(weekStart) {
     days.push(d);
   }
   return days;
+}
+
+function startOfMonth(d) {
+  const date = new Date(d.getFullYear(), d.getMonth(), 1);
+  date.setHours(0, 0, 0, 0);
+  return date;
+}
+
+/* a month "grid" always shows full Mon-Sun weeks, so it includes the   */
+/* tail of the previous month and the start of the next to fill out the */
+/* first and last rows — each returned day knows if it's in-month.      */
+function monthGridWeeks(monthStart) {
+  const gridStart = startOfWeek(monthStart);
+  const monthIndex = monthStart.getMonth();
+  const weeks = [];
+  let cursor = new Date(gridStart);
+
+  // a calendar month needs at most 6 weeks to fully contain it
+  for (let w = 0; w < 6; w++) {
+    const week = [];
+    for (let i = 0; i < 7; i++) {
+      week.push({ date: new Date(cursor), inMonth: cursor.getMonth() === monthIndex });
+      cursor.setDate(cursor.getDate() + 1);
+    }
+    weeks.push(week);
+    // stop once we've completed the month and filled its last week
+    if (cursor.getMonth() !== monthIndex && week.some((d) => d.inMonth)) {
+      // we've just stepped past the month's last day and finished that row
+      break;
+    }
+  }
+  return weeks;
 }
 
 /* ---------------------------------------------------------- */
@@ -449,10 +483,24 @@ function buildChildCardEl(child, opts = {}) {
 }
 
 /* ---------------------------------------------------------- */
-/* Calendar                                                       */
+/* Calendar — week view and month view share one nav row;        */
+/* calendarViewMode picks which grid is visible and what the     */
+/* Prev/Next/Today buttons operate on.                           */
 /* ---------------------------------------------------------- */
 
 function renderCalendar() {
+  if (calendarViewMode === "month") {
+    document.getElementById("calendar-grid").style.display = "none";
+    document.getElementById("calendar-month-grid").style.display = "flex";
+    renderCalendarMonth();
+  } else {
+    document.getElementById("calendar-grid").style.display = "grid";
+    document.getElementById("calendar-month-grid").style.display = "none";
+    renderCalendarWeek();
+  }
+}
+
+function renderCalendarWeek() {
   const grid = document.getElementById("calendar-grid");
   grid.innerHTML = "";
 
@@ -500,6 +548,183 @@ function renderCalendar() {
 
     col.appendChild(dropZone);
     grid.appendChild(col);
+  });
+}
+
+/* Month view shows compact dots rather than full cards — clicking a    */
+/* day jumps into week view for that day's week, where the full cards   */
+/* (and drag/date/unschedule controls) live.                            */
+function renderCalendarMonth() {
+  const container = document.getElementById("calendar-month-grid");
+  container.innerHTML = "";
+
+  const today = new Date();
+  const weeks = monthGridWeeks(viewMonthStart);
+
+  const label = viewMonthStart.toLocaleDateString(undefined, { month: "long", year: "numeric" });
+  document.getElementById("week-label").textContent = label;
+
+  const weekdayRow = document.createElement("div");
+  weekdayRow.className = "month-weekday-row";
+  ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"].forEach((d) => {
+    const span = document.createElement("span");
+    span.textContent = d;
+    weekdayRow.appendChild(span);
+  });
+  container.appendChild(weekdayRow);
+
+  const weeksWrap = document.createElement("div");
+  weeksWrap.className = "month-weeks";
+
+  weeks.forEach((week) => {
+    const weekRow = document.createElement("div");
+    weekRow.className = "month-week-row";
+
+    week.forEach(({ date, inMonth }) => {
+      const iso = fmtISO(date);
+      const cell = document.createElement("div");
+      cell.className = "month-cell" + (inMonth ? "" : " outside-month") + (isSameDay(date, today) ? " today" : "");
+
+      const dayChildren = STATE.children.filter((c) => c.scheduledDate === iso);
+      const maxDots = 6;
+      const shown = dayChildren.slice(0, maxDots);
+      const overflowCount = dayChildren.length - shown.length;
+
+      const dotsHtml = shown
+        .map((c) => `<span class="month-dot ${c.type}${c.done ? " done" : ""}" title="${escapeHtml((ideaById(c.ideaId) || {}).title || "")}"></span>`)
+        .join("");
+
+      cell.innerHTML = `
+        <span class="month-date">${date.getDate()}</span>
+        <span class="month-dots">${dotsHtml}${overflowCount > 0 ? `<span class="month-overflow">+${overflowCount}</span>` : ""}</span>
+      `;
+
+      cell.addEventListener("click", () => {
+        viewWeekStart = startOfWeek(date);
+        calendarViewMode = "week";
+        setViewToggleUI();
+        renderCalendar();
+      });
+
+      weekRow.appendChild(cell);
+    });
+
+    weeksWrap.appendChild(weekRow);
+  });
+
+  container.appendChild(weeksWrap);
+}
+
+function setViewToggleUI() {
+  document.getElementById("btn-view-week").classList.toggle("active", calendarViewMode === "week");
+  document.getElementById("btn-view-month").classList.toggle("active", calendarViewMode === "month");
+}
+
+/* ---------------------------------------------------------- */
+/* Email backups — two flavours:                                 */
+/*  - "Calendar" : just what's currently scheduled, as a dated   */
+/*    itinerary. Useful as a quick "what's coming up" share.     */
+/*  - "Full board": every idea, every spawned child (wherever it  */
+/*    currently sits — parked, staging, or scheduled), plus a     */
+/*    compact raw-data block at the end so the board could be      */
+/*    reconstructed by hand if ever needed.                       */
+/* Both open as a mailto: link with a pre-filled subject/body,    */
+/* matching the email-snapshot pattern used across the other      */
+/* apps — no server, no account, just your own mail client.       */
+/* ---------------------------------------------------------- */
+
+function statusLabel(child) {
+  if (child.scheduledDate) return `scheduled ${child.scheduledDate}${child.done ? " — done" : ""}`;
+  if (child.parked) return "parked on idea card";
+  return "in staging, no date yet";
+}
+
+function buildCalendarEmailBody() {
+  const scheduled = STATE.children.filter((c) => c.scheduledDate);
+  scheduled.sort((a, b) => (a.scheduledDate < b.scheduledDate ? -1 : a.scheduledDate > b.scheduledDate ? 1 : 0));
+
+  const lines = [];
+  lines.push("COMMUNIC8 — CALENDAR SNAPSHOT");
+  lines.push(new Date().toLocaleString());
+  lines.push("");
+
+  if (!scheduled.length) {
+    lines.push("Nothing is currently scheduled on the calendar.");
+  } else {
+    let lastDate = null;
+    scheduled.forEach((child) => {
+      if (child.scheduledDate !== lastDate) {
+        lines.push("");
+        lines.push(`— ${child.scheduledDate} —`);
+        lastDate = child.scheduledDate;
+      }
+      const idea = ideaById(child.ideaId);
+      const typeLabel = child.type === "creation" ? "Build" : "Do";
+      const doneTag = child.done ? " [done]" : "";
+      lines.push(`  • [${typeLabel}] ${idea ? idea.title : "Unknown idea"}${doneTag}`);
+    });
+  }
+
+  lines.push("");
+  lines.push(`Total scheduled: ${scheduled.length} (${scheduled.filter((c) => c.done).length} done)`);
+  return lines.join("\n");
+}
+
+function buildFullBoardEmailBody() {
+  const lines = [];
+  lines.push("COMMUNIC8 — FULL BOARD BACKUP");
+  lines.push(new Date().toLocaleString());
+  lines.push("");
+  lines.push(`${STATE.ideas.length} ideas, ${STATE.children.length} spawned task${STATE.children.length === 1 ? "" : "s"}`);
+  lines.push("");
+
+  STATE.categories.forEach((cat) => {
+    const ideasInCat = STATE.ideas.filter((i) => i.category === cat.id);
+    if (!ideasInCat.length) return;
+    lines.push(`=== ${cat.label} ===`);
+    ideasInCat.forEach((idea) => {
+      lines.push(`• ${idea.title}`);
+      if (idea.description) lines.push(`   ${idea.description}`);
+      const kids = STATE.children.filter((c) => c.ideaId === idea.id);
+      kids.forEach((child) => {
+        const typeLabel = child.type === "creation" ? "Build" : "Do";
+        lines.push(`   - [${typeLabel}] ${statusLabel(child)}`);
+      });
+    });
+    lines.push("");
+  });
+
+  lines.push("");
+  lines.push("---");
+  lines.push("Raw data (for backup / re-import — do not edit by hand):");
+  lines.push(JSON.stringify(STATE));
+  return lines.join("\n");
+}
+
+function openMailto(subject, body) {
+  const url = `mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+  // mailto: links have practical length limits in some clients; if the body
+  // is very large (e.g. a big board with lots of history), warn rather than
+  // silently truncate, so nothing important gets lost without the person knowing.
+  if (url.length > 1800) {
+    const proceed = confirm(
+      "This backup is fairly large and some email apps may cut off long mailto links. " +
+      "It should still work in most mail clients, but if the email arrives empty or truncated, " +
+      "consider copying the board data manually instead. Open email now?"
+    );
+    if (!proceed) return;
+  }
+  window.location.href = url;
+}
+
+function wireEmailActions() {
+  document.getElementById("btn-email-calendar").addEventListener("click", () => {
+    const body = buildCalendarEmailBody();
+    openMailto("Communic8 — Calendar snapshot", body);
+  });
+  document.getElementById("btn-email-board").addEventListener("click", () => {
+    const body = buildFullBoardEmailBody();
+    openMailto("Communic8 — Full board backup", body);
   });
 }
 
@@ -565,16 +790,51 @@ document.addEventListener("click", (e) => {
 function wireToolbar() {
   document.getElementById("search").addEventListener("input", renderCanvas);
 
+  document.getElementById("btn-view-week").addEventListener("click", () => {
+    // if we navigated the month view away from today, landing back on an
+    // unrelated week would be just as confusing as the month-sync issue
+    // above -- so default to the first week of whatever month was shown,
+    // unless today actually falls within it.
+    const today = new Date();
+    if (calendarViewMode === "month") {
+      viewWeekStart =
+        today.getFullYear() === viewMonthStart.getFullYear() && today.getMonth() === viewMonthStart.getMonth()
+          ? startOfWeek(today)
+          : startOfWeek(viewMonthStart);
+    }
+    calendarViewMode = "week";
+    setViewToggleUI();
+    renderCalendar();
+  });
+  document.getElementById("btn-view-month").addEventListener("click", () => {
+    // land on whichever month the currently-viewed week falls in, so
+    // switching views doesn't jump you somewhere unrelated to what you
+    // were just looking at.
+    viewMonthStart = startOfMonth(viewWeekStart);
+    calendarViewMode = "month";
+    setViewToggleUI();
+    renderCalendar();
+  });
+
   document.getElementById("btn-prev-week").addEventListener("click", () => {
-    viewWeekStart.setDate(viewWeekStart.getDate() - 7);
+    if (calendarViewMode === "month") {
+      viewMonthStart = startOfMonth(new Date(viewMonthStart.getFullYear(), viewMonthStart.getMonth() - 1, 1));
+    } else {
+      viewWeekStart.setDate(viewWeekStart.getDate() - 7);
+    }
     renderCalendar();
   });
   document.getElementById("btn-next-week").addEventListener("click", () => {
-    viewWeekStart.setDate(viewWeekStart.getDate() + 7);
+    if (calendarViewMode === "month") {
+      viewMonthStart = startOfMonth(new Date(viewMonthStart.getFullYear(), viewMonthStart.getMonth() + 1, 1));
+    } else {
+      viewWeekStart.setDate(viewWeekStart.getDate() + 7);
+    }
     renderCalendar();
   });
   document.getElementById("btn-today").addEventListener("click", () => {
     viewWeekStart = startOfWeek(new Date());
+    viewMonthStart = startOfMonth(new Date());
     renderCalendar();
   });
 
@@ -651,6 +911,7 @@ function init() {
   wireStagingDropTarget();
   wireToolbar();
   wireCanvasDragController();
+  wireEmailActions();
   boot();
 }
 
