@@ -12,11 +12,24 @@ const CATEGORY_COLOR_VARS = {
   gray: "gray", purple: "purple", green: "green", pink: "pink"
 };
 
+/* Boards are the tabs across the top of the app. Each idea lives on   */
+/* exactly one board via its category's `board` field — the board     */
+/* itself isn't stored on the idea. "random" is the original board;    */
+/* the others start out empty aside from a placeholder category so     */
+/* there's somewhere for a newly-added idea to file under.             */
+const BOARDS = [
+  { id: "random", label: "Random sales strategies", subtitle: "everything you could try, held loosely" },
+  { id: "content", label: "Content creation marketing", subtitle: "posts, videos, and pieces to make" },
+  { id: "f2f", label: "F2F sales campaigns", subtitle: "in-person pitches, meetups, and campaigns" },
+];
+const BOARD_DEFAULT_COLOR = { content: "amber", f2f: "clay" };
+
 let STATE = {
-  categories: [],     // [{id, label, color}]
+  categories: [],     // [{id, label, color, board}]
   ideas: [],           // [{id, category, title, description}]
   children: [],         // [{id, ideaId, type: 'creation'|'application', done:false, scheduledDate: null|'YYYY-MM-DD', parked:false, canvasX, canvasY}]
   canvasPositions: {}, // ideaId -> {x,y}  (idea card positions on canvas)
+  currentBoard: "random",
 };
 
 let viewWeekStart = startOfWeek(new Date());
@@ -47,9 +60,72 @@ async function boot() {
     STATE.children = [];
     STATE.canvasPositions = {};
     layoutCanvasPositions(); // initial clustered layout
-    saveToStorage();
   }
+  migrateState();
+  saveToStorage();
+  wireBoardTabs();
   render();
+}
+
+/* Brings older saved boards up to date with the tab reorg: tags any     */
+/* pre-existing category as "random" (the original, un-tabbed board),    */
+/* and makes sure every newer board has at least one category to file    */
+/* an idea under. Safe to run every boot — a no-op once already migrated.*/
+function migrateState() {
+  STATE.categories.forEach((c) => {
+    if (!c.board) c.board = "random";
+  });
+  BOARDS.forEach((b) => {
+    if (b.id === "random") return;
+    const hasCategory = STATE.categories.some((c) => c.board === b.id);
+    if (!hasCategory) {
+      STATE.categories.push({
+        id: b.id + "-general",
+        label: "General",
+        color: BOARD_DEFAULT_COLOR[b.id] || "gray",
+        board: b.id,
+      });
+    }
+  });
+  if (!STATE.currentBoard) STATE.currentBoard = "random";
+}
+
+/* ---------------------------------------------------------- */
+/* Board (tab) helpers                                          */
+/* ---------------------------------------------------------- */
+
+function currentBoardCategories() {
+  return STATE.categories.filter((c) => c.board === STATE.currentBoard);
+}
+
+function ideaBoard(idea) {
+  const cat = categoryById(idea.category);
+  return cat ? cat.board : null;
+}
+
+function isIdeaInCurrentBoard(idea) {
+  return ideaBoard(idea) === STATE.currentBoard;
+}
+
+function isChildInCurrentBoard(child) {
+  const idea = ideaById(child.ideaId);
+  return !!idea && isIdeaInCurrentBoard(idea);
+}
+
+function wireBoardTabs() {
+  document.querySelectorAll(".board-tab").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const boardId = btn.dataset.board;
+      if (boardId === STATE.currentBoard) return;
+      STATE.currentBoard = boardId;
+      document.querySelectorAll(".board-tab").forEach((b) => b.classList.toggle("active", b.dataset.board === boardId));
+      const board = BOARDS.find((b) => b.id === boardId);
+      const subtitleEl = document.querySelector("header .subtitle");
+      if (board && subtitleEl) subtitleEl.textContent = board.subtitle;
+      saveToStorage();
+      render();
+    });
+  });
 }
 
 function loadFromStorage() {
@@ -110,8 +186,9 @@ function layoutCanvasPositions() {
 
 function clusterBounds() {
   // compute a bounding box per category from current idea positions, for the halo
+  // (scoped to the active board's categories — other boards' clusters don't apply here)
   const bounds = {};
-  STATE.categories.forEach((cat) => {
+  currentBoardCategories().forEach((cat) => {
     const ideas = STATE.ideas.filter((i) => i.category === cat.id);
     if (!ideas.length) return;
     let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
@@ -207,10 +284,12 @@ function render() {
 }
 
 function renderStats() {
-  const total = STATE.ideas.length;
-  const spawned = STATE.children.length;
-  const scheduled = STATE.children.filter((c) => c.scheduledDate).length;
-  const done = STATE.children.filter((c) => c.done).length;
+  const boardIdeas = STATE.ideas.filter(isIdeaInCurrentBoard);
+  const boardChildren = STATE.children.filter(isChildInCurrentBoard);
+  const total = boardIdeas.length;
+  const spawned = boardChildren.length;
+  const scheduled = boardChildren.filter((c) => c.scheduledDate).length;
+  const done = boardChildren.filter((c) => c.done).length;
   document.getElementById("header-stats").innerHTML = `
     <span><b>${total}</b> ideas</span>
     <span><b>${spawned}</b> in motion</span>
@@ -238,7 +317,7 @@ function renderCanvas() {
 
   // halos first (so cards render above them)
   const bounds = clusterBounds();
-  STATE.categories.forEach((cat) => {
+  currentBoardCategories().forEach((cat) => {
     const b = bounds[cat.id];
     if (!b) return;
     const halo = document.createElement("div");
@@ -258,7 +337,18 @@ function renderCanvas() {
     canvas.appendChild(label);
   });
 
-  STATE.ideas.forEach((idea) => {
+  const boardIdeas = STATE.ideas.filter(isIdeaInCurrentBoard);
+  if (!boardIdeas.length) {
+    const empty = document.createElement("div");
+    empty.id = "canvas-empty";
+    empty.style.cssText =
+      "position:absolute; left:40px; top:40px; font-family:var(--serif); font-style:italic; " +
+      "font-size:14px; color:var(--ink-soft); max-width:320px;";
+    empty.innerHTML = "Nothing on this board yet. Click <b>+ New idea</b> above to start it.";
+    canvas.appendChild(empty);
+  }
+
+  boardIdeas.forEach((idea) => {
     if (filterText) {
       const hay = (idea.title + " " + (idea.description || "")).toLowerCase();
       if (!hay.includes(filterText)) return;
@@ -324,7 +414,7 @@ function renderStaging() {
   const row = document.getElementById("staging-row");
   row.innerHTML = "";
 
-  const active = STATE.children.filter((c) => !c.scheduledDate && !c.parked);
+  const active = STATE.children.filter((c) => !c.scheduledDate && !c.parked && isChildInCurrentBoard(c));
 
   if (!active.length) {
     const empty = document.createElement("div");
@@ -526,7 +616,7 @@ function renderCalendarWeek() {
     dropZone.className = "day-drop-zone";
     dropZone.dataset.date = fmtISO(day);
 
-    const dayChildren = STATE.children.filter((c) => c.scheduledDate === fmtISO(day));
+    const dayChildren = STATE.children.filter((c) => c.scheduledDate === fmtISO(day) && isChildInCurrentBoard(c));
     dayChildren.forEach((child) => dropZone.appendChild(buildChildCardEl(child)));
 
     dropZone.addEventListener("dragover", (e) => {
@@ -585,7 +675,7 @@ function renderCalendarMonth() {
       const cell = document.createElement("div");
       cell.className = "month-cell" + (inMonth ? "" : " outside-month") + (isSameDay(date, today) ? " today" : "");
 
-      const dayChildren = STATE.children.filter((c) => c.scheduledDate === iso);
+      const dayChildren = STATE.children.filter((c) => c.scheduledDate === iso && isChildInCurrentBoard(c));
       const maxDots = 6;
       const shown = dayChildren.slice(0, maxDots);
       const overflowCount = dayChildren.length - shown.length;
@@ -865,11 +955,35 @@ function wireToolbar() {
   /* Modal: add new idea */
   const overlay = document.getElementById("modal-overlay");
   const catSelect = document.getElementById("modal-category");
+  const newCatRow = document.getElementById("modal-new-category-row");
+  const newCatInput = document.getElementById("modal-new-category-name");
+  const NEW_CATEGORY_VALUE = "__new__";
+
+  function refreshCatSelect() {
+    const boardCats = currentBoardCategories();
+    const options = boardCats.map((c) => `<option value="${c.id}">${escapeHtml(c.label)}</option>`);
+    options.push(`<option value="${NEW_CATEGORY_VALUE}">+ New category…</option>`);
+    catSelect.innerHTML = options.join("");
+    // an empty board (e.g. a freshly-added tab) has nothing to pick but
+    // "+ New category" — select it and show the name field immediately
+    // instead of making the person discover it in the dropdown.
+    if (!boardCats.length) {
+      catSelect.value = NEW_CATEGORY_VALUE;
+      newCatRow.style.display = "block";
+    } else {
+      newCatRow.style.display = "none";
+    }
+  }
+
+  catSelect.addEventListener("change", () => {
+    newCatRow.style.display = catSelect.value === NEW_CATEGORY_VALUE ? "block" : "none";
+  });
 
   document.getElementById("btn-add-idea").addEventListener("click", () => {
-    catSelect.innerHTML = STATE.categories.map((c) => `<option value="${c.id}">${escapeHtml(c.label)}</option>`).join("");
+    refreshCatSelect();
     document.getElementById("modal-title").value = "";
     document.getElementById("modal-desc").value = "";
+    newCatInput.value = "";
     overlay.classList.add("open");
   });
 
@@ -880,8 +994,27 @@ function wireToolbar() {
   document.getElementById("btn-save-idea").addEventListener("click", () => {
     const title = document.getElementById("modal-title").value.trim();
     if (!title) return;
+
+    let categoryId = catSelect.value;
+
+    if (categoryId === NEW_CATEGORY_VALUE) {
+      const label = newCatInput.value.trim();
+      if (!label) {
+        newCatInput.focus();
+        return;
+      }
+      categoryId = "cat_" + Date.now();
+      const colorCycle = Object.keys(CATEGORY_COLOR_VARS);
+      const colorIndex = currentBoardCategories().length % colorCycle.length;
+      STATE.categories.push({
+        id: categoryId,
+        label,
+        color: BOARD_DEFAULT_COLOR[STATE.currentBoard] || colorCycle[colorIndex],
+        board: STATE.currentBoard,
+      });
+    }
+
     const id = "custom_" + Date.now();
-    const categoryId = catSelect.value;
     STATE.ideas.push({
       id,
       category: categoryId,

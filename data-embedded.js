@@ -3,107 +3,140 @@ window.__COMMUNIC8_SEED_DATA__ = {
     {
       "id": "outreach-cold",
       "label": "Direct outreach — cold",
-      "color": "coral"
+      "color": "coral",
+      "board": "random"
     },
     {
       "id": "outreach-warm",
       "label": "Direct outreach — warm",
-      "color": "amber"
+      "color": "amber",
+      "board": "random"
     },
     {
       "id": "content-written",
       "label": "Content — written",
-      "color": "teal"
+      "color": "teal",
+      "board": "random"
     },
     {
       "id": "content-video",
       "label": "Content — video & audio",
-      "color": "blue"
+      "color": "blue",
+      "board": "random"
     },
     {
       "id": "paid",
       "label": "Paid",
-      "color": "gray"
+      "color": "gray",
+      "board": "random"
     },
     {
       "id": "partnerships",
       "label": "Partnerships & referral",
-      "color": "purple"
+      "color": "purple",
+      "board": "random"
     },
     {
       "id": "community",
       "label": "Community & presence",
-      "color": "green"
+      "color": "green",
+      "board": "random"
     },
     {
       "id": "retention",
       "label": "Retention & reactivation",
-      "color": "pink"
+      "color": "pink",
+      "board": "random"
     },
     {
       "id": "seo",
       "label": "SEO & discoverability",
-      "color": "gray"
+      "color": "gray",
+      "board": "random"
     },
     {
       "id": "bigger-video",
       "label": "Bigger video formats",
-      "color": "blue"
+      "color": "blue",
+      "board": "random"
     },
     {
       "id": "media",
       "label": "Broadcast & media",
-      "color": "coral"
+      "color": "coral",
+      "board": "random"
     },
     {
       "id": "bigger-events",
       "label": "Bigger live & event formats",
-      "color": "amber"
+      "color": "amber",
+      "board": "random"
     },
     {
       "id": "bigger-written",
       "label": "Bigger written formats",
-      "color": "teal"
+      "color": "teal",
+      "board": "random"
     },
     {
       "id": "community-build",
       "label": "Community-building formats",
-      "color": "green"
+      "color": "green",
+      "board": "random"
     },
     {
       "id": "stranger-outreach",
       "label": "Stranger-er outreach",
-      "color": "coral"
+      "color": "coral",
+      "board": "random"
     },
     {
       "id": "novel-digital",
       "label": "Strange & novel digital",
-      "color": "purple"
+      "color": "purple",
+      "board": "random"
     },
     {
       "id": "borrowed-audience",
       "label": "Borrowed audience",
-      "color": "pink"
+      "color": "pink",
+      "board": "random"
     },
     {
       "id": "status",
       "label": "Status & authority",
-      "color": "amber"
+      "color": "amber",
+      "board": "random"
     },
     {
       "id": "old-school",
       "label": "Old-school & unconventional",
-      "color": "gray"
+      "color": "gray",
+      "board": "random"
     },
     {
       "id": "experimental",
       "label": "Weird & experimental",
-      "color": "purple"
+      "color": "purple",
+      "board": "random"
     },
     {
       "id": "live-experiential",
       "label": "Live experiential & social",
-      "color": "teal"
+      "color": "teal",
+      "board": "random"
+    },
+    {
+      "id": "content-general",
+      "label": "General",
+      "color": "amber",
+      "board": "content"
+    },
+    {
+      "id": "f2f-general",
+      "label": "General",
+      "color": "clay",
+      "board": "f2f"
     }
   ],
   "ideas": [
