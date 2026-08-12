@@ -691,6 +691,8 @@
     border-radius: 14px;
     padding: 22px 24px;
     width: 380px;
+    max-height: 88vh;
+    overflow-y: auto;
     box-shadow: var(--shadow-lift);
   }
   #modal h2 {
@@ -719,7 +721,12 @@
     display: flex;
     justify-content: flex-end;
     gap: 8px;
-    margin-top: 16px;
+    position: sticky;
+    bottom: 0;
+    margin: 16px -24px -22px;
+    padding: 12px 24px 22px;
+    background: var(--paper);
+    border-top: 1px solid var(--line);
   }
 
   /* scrollbar polish */

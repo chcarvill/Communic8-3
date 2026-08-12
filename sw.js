@@ -14,7 +14,7 @@
      before — this just makes the app shell itself load offline.
    ============================================================ */
 
-const CACHE_NAME = "communic8-marketing-v3";
+const CACHE_NAME = "communic8-marketing-v4";
 
 const FILES_TO_CACHE = [
   "./",
