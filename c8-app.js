@@ -864,7 +864,17 @@ document.addEventListener("click", (e) => {
         c8desc: desc,
         c8strategic: idea.strategicObjective || "",
       });
-      window.open(MISSION_CONTROL_URL + "?" + params.toString(), "_blank", "noopener");
+      // A real <a> click (rather than window.open()) is handled more
+      // reliably by installed-app runtimes on mobile -- it's treated as a
+      // genuine link tap, so it opens in the system browser instead of
+      // risking hijacking this app's own single window.
+      const link = document.createElement("a");
+      link.href = MISSION_CONTROL_URL + "?" + params.toString();
+      link.target = "_blank";
+      link.rel = "noopener";
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
     }
     return;
   }
