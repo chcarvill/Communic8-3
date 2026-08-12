@@ -19,10 +19,13 @@ const CATEGORY_COLOR_VARS = {
 /* there's somewhere for a newly-added idea to file under.             */
 const BOARDS = [
   { id: "random", label: "Random sales strategies", subtitle: "everything you could try, held loosely" },
-  { id: "content", label: "Content creation marketing", subtitle: "posts, videos, and pieces to make" },
+  { id: "content", label: "Content creation / marketing", subtitle: "posts, videos, and pieces to make" },
   { id: "f2f", label: "F2F sales campaigns", subtitle: "in-person pitches, meetups, and campaigns" },
 ];
 const BOARD_DEFAULT_COLOR = { content: "amber", f2f: "clay" };
+// Where Mission Control (and its Do tab) lives -- used by "Send to Do" to
+// hand a content idea's brief description and strategic objective across.
+const MISSION_CONTROL_URL = "https://chcarvill.github.io/Mission-Control/";
 
 let STATE = {
   categories: [],     // [{id, label, color, board}]
@@ -363,6 +366,7 @@ function renderCanvas() {
 
     const creationChild = STATE.children.find((c) => c.ideaId === idea.id && c.type === "creation");
     const applicationChild = STATE.children.find((c) => c.ideaId === idea.id && c.type === "application");
+    const canSendToDo = STATE.currentBoard === "content" && (idea.strategicObjective || idea.description);
 
     card.innerHTML = `
       <span class="cat-tag" style="color: var(--${cat.color});">${escapeHtml(cat.label)}</span>
@@ -375,6 +379,7 @@ function renderCanvas() {
         <button class="spawn-btn application ${applicationChild ? "spawned" : ""}" data-action="spawn-application" data-idea="${idea.id}">
           <img src="assets/icon-application.png" alt="" /> ${applicationChild ? "Doing ✓" : "Do it"}
         </button>
+        ${canSendToDo ? `<button class="spawn-btn send-to-do" data-action="send-to-do" data-idea="${idea.id}" title="Open in Mission Control's Do, ready to add as a task">→ Send to Do</button>` : ""}
       </div>
       <div class="idea-children"></div>
     `;
@@ -849,6 +854,31 @@ document.addEventListener("click", (e) => {
     return;
   }
 
+  const sendToDoBtn = e.target.closest("[data-action='send-to-do']");
+  if (sendToDoBtn) {
+    const idea = STATE.ideas.find((i) => i.id === sendToDoBtn.dataset.idea);
+    if (idea) {
+      const desc = idea.description ? idea.description : idea.title;
+      const params = new URLSearchParams({
+        c8title: idea.title,
+        c8desc: desc,
+        c8strategic: idea.strategicObjective || "",
+      });
+      // A real <a> click (rather than window.open()) is handled more
+      // reliably by installed-app runtimes on mobile -- it's treated as a
+      // genuine link tap, so it opens in the system browser instead of
+      // risking hijacking this app's own single window.
+      const link = document.createElement("a");
+      link.href = MISSION_CONTROL_URL + "?" + params.toString();
+      link.target = "_blank";
+      link.rel = "noopener";
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    }
+    return;
+  }
+
   const toggleBtn = e.target.closest("[data-action='toggle-done']");
   if (toggleBtn) {
     const child = childById(toggleBtn.dataset.child);
@@ -984,6 +1014,16 @@ function wireToolbar() {
     document.getElementById("modal-title").value = "";
     document.getElementById("modal-desc").value = "";
     newCatInput.value = "";
+
+    const isContentBoard = STATE.currentBoard === "content";
+    document.getElementById("modal-content-fields").style.display = isContentBoard ? "block" : "none";
+    document.getElementById("modal-desc-label").textContent = isContentBoard ? "Brief description" : "Description (optional)";
+    if (isContentBoard) {
+      ["modal-content-strategic", "modal-content-market", "modal-content-purpose", "modal-content-location",
+       "modal-content-channel", "modal-content-segments", "modal-content-plan-date", "modal-content-film-date"]
+        .forEach((id) => { document.getElementById(id).value = ""; });
+    }
+
     overlay.classList.add("open");
   });
 
@@ -1015,12 +1055,23 @@ function wireToolbar() {
     }
 
     const id = "custom_" + Date.now();
-    STATE.ideas.push({
+    const idea = {
       id,
       category: categoryId,
       title,
       description: document.getElementById("modal-desc").value.trim(),
-    });
+    };
+    if (STATE.currentBoard === "content") {
+      idea.strategicObjective = document.getElementById("modal-content-strategic").value.trim();
+      idea.market = document.getElementById("modal-content-market").value.trim();
+      idea.purpose = document.getElementById("modal-content-purpose").value.trim();
+      idea.location = document.getElementById("modal-content-location").value.trim();
+      idea.channel = document.getElementById("modal-content-channel").value.trim();
+      idea.segments = document.getElementById("modal-content-segments").value.trim();
+      idea.planDate = document.getElementById("modal-content-plan-date").value || null;
+      idea.filmDate = document.getElementById("modal-content-film-date").value || null;
+    }
+    STATE.ideas.push(idea);
 
     // place new card near its category cluster, with slight randomness
     const bounds = clusterBounds();
