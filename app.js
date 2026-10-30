@@ -18,7 +18,7 @@ const CATEGORY_COLOR_VARS = {
 /* the others start out empty aside from a placeholder category so     */
 /* there's somewhere for a newly-added idea to file under.             */
 const BOARDS = [
-  { id: "random", label: "Random sales strategies", subtitle: "everything you could try, held loosely" },
+  { id: "random", label: "Homepage", subtitle: "utilisable sales strategies" },
   { id: "content", label: "Content creation / marketing", subtitle: "posts, videos, and pieces to make" },
   { id: "f2f", label: "F2F sales campaigns", subtitle: "in-person pitches, meetups, and campaigns" },
   // The repository isn't a canvas board: it's its own page (no categories,
@@ -827,6 +827,7 @@ function buildFullBoardEmailBody() {
     STATE.repository.forEach((i) => {
       lines.push(`• ${i.text.replace(/\s*\n\s*/g, " ")}`);
       lines.push(`   Medium: ${(i.mediums || []).join(", ") || "—"}${i.series ? " (series: " + i.series + ")" : ""}`);
+      if (i.calendarDate) lines.push(`   On homepage calendar: ${i.calendarDate}`);
     });
     lines.push("");
   }
@@ -1147,6 +1148,7 @@ function renderRepoStats() {
   document.getElementById("header-stats").innerHTML = `
     <span><b>${list.length}</b> ideas captured</span>
     <span><b>${tagged}</b> with a medium</span>
+    <span><b>${list.filter((i) => i.calendarDate).length}</b> on the homepage</span>
   `;
 }
 
@@ -1203,13 +1205,17 @@ function renderRepository() {
       ? i.mediums.map((m) => `<span class="repo-tag">${escapeHtml(m === REPO_EPISODE && i.series ? m + " · " + i.series : m)}</span>`).join("")
       : `<span class="repo-tag none">No medium</span>`;
     const when = i.created ? new Date(i.created).toLocaleDateString(undefined, { day: "numeric", month: "short", year: "numeric" }) : "";
+    const calTag = i.calendarDate
+      ? `<span class="repo-tag cal">On homepage · ${escapeHtml(fmtShortDate(i.calendarDate))}</span>`
+      : "";
     return `
       <div class="repo-item" data-repo-id="${i.id}">
         <div class="repo-item-body">
           <div class="repo-item-text">${escapeHtml(i.text)}</div>
-          <div class="repo-item-meta">${tags}<span class="repo-date">${when}</span></div>
+          <div class="repo-item-meta">${tags}${calTag}<span class="repo-date">${when}</span></div>
         </div>
         <div class="repo-item-actions">
+          ${i.calendarDate ? "" : `<button class="repo-icon-btn edit" data-repo-action="calendar" data-id="${i.id}" title="Add this idea to the homepage calendar">Add to calendar</button>`}
           <button class="repo-icon-btn edit" data-repo-action="refile" data-id="${i.id}" title="Change medium">Change medium</button>
           <button class="repo-icon-btn" data-repo-action="delete" data-id="${i.id}" title="Delete this idea">✕</button>
         </div>
@@ -1235,6 +1241,137 @@ function repoCloseMediumStep() {
   document.getElementById("repo-idea-input").readOnly = false;
   repoPendingMediums = [];
   repoEditingId = null;
+}
+
+
+/* ---------------------------------------------------------- */
+/* Repository -> Homepage calendar                               */
+/* After an idea is saved, offer to put it on the Homepage       */
+/* calendar. That creates a regular idea card (filed under        */
+/* "From ideas repository") plus a Do/Build task on the chosen   */
+/* date, exactly like one made on the Homepage itself.           */
+/* ---------------------------------------------------------- */
+
+const REPO_CALENDAR_CATEGORY = "cat_from_repository";
+let repoCalItemId = null;
+let repoCalType = "application";
+
+function fmtShortDate(iso) {
+  return new Date(iso + "T00:00:00").toLocaleDateString(undefined, { day: "numeric", month: "short", year: "numeric" });
+}
+
+function repoOpenCalendarStep(itemId, justSaved) {
+  const item = STATE.repository.find((i) => i.id === itemId);
+  if (!item) return;
+  repoCalItemId = itemId;
+  repoCalType = "application";
+  document.getElementById("repo-cal-saved").style.display = justSaved ? "block" : "none";
+  document.getElementById("repo-cal-quote").textContent = item.text;
+  document.getElementById("repo-cal-choice").style.display = "flex";
+  document.getElementById("repo-cal-form").style.display = "none";
+  document.getElementById("repo-cal-done").style.display = "none";
+  document.getElementById("repo-cal-date").value = fmtISO(new Date());
+  repoRenderCalType();
+  // swap the capture box for the prompt
+  document.getElementById("repo-idea-input").style.display = "none";
+  document.getElementById("repo-step1-actions").style.display = "none";
+  document.getElementById("repo-medium").style.display = "none";
+  document.getElementById("repo-calendar").style.display = "block";
+  document.getElementById("repo-calendar").scrollIntoView({ block: "nearest", behavior: "smooth" });
+}
+
+function repoCloseCalendarStep() {
+  document.getElementById("repo-calendar").style.display = "none";
+  document.getElementById("repo-idea-input").style.display = "";
+  document.getElementById("repo-step1-actions").style.display = "flex";
+  repoCalItemId = null;
+}
+
+function repoRenderCalType() {
+  document.querySelectorAll("#repo-cal-type .medium-chip").forEach((c) =>
+    c.classList.toggle("selected", c.dataset.caltype === repoCalType));
+}
+
+/* Files the repository idea on the Homepage board and schedules it. */
+function addRepoItemToCalendar(item, date, type) {
+  let cat = STATE.categories.find((c) => c.id === REPO_CALENDAR_CATEGORY);
+  if (!cat) {
+    cat = { id: REPO_CALENDAR_CATEGORY, label: "From ideas repository", color: "teal", board: "random" };
+    STATE.categories.push(cat);
+  }
+
+  const firstLine = item.text.split("\n")[0].trim();
+  const title = firstLine.length > 70 ? firstLine.slice(0, 67).trimEnd() + "…" : firstLine;
+  const mediumText = (item.mediums || []).map((m) => (m === REPO_EPISODE && item.series ? `${m} (${item.series})` : m)).join(", ");
+  const descParts = [];
+  if (item.text.trim() !== title) descParts.push(item.text.trim());
+  if (mediumText) descParts.push("Medium: " + mediumText);
+
+  const ideaId = "repoidea_" + Date.now();
+  STATE.ideas.push({ id: ideaId, category: REPO_CALENDAR_CATEGORY, title, description: descParts.join("\n\n") });
+
+  // same grid slot logic as the initial layout, so the card sits in its own cluster
+  const ci = STATE.categories.indexOf(cat);
+  const k = STATE.ideas.filter((i) => i.category === REPO_CALENDAR_CATEGORY).length - 1;
+  STATE.canvasPositions[ideaId] = {
+    x: 60 + (ci % 5) * 430 + (k % 2) * 205,
+    y: 50 + Math.floor(ci / 5) * 300 + 38 + Math.floor(k / 2) * 150,
+  };
+
+  STATE.children.push({
+    id: "c_" + ideaId + "_" + type + "_" + Date.now(),
+    ideaId, type, done: false, scheduledDate: date, parked: false,
+  });
+
+  item.calendarIdeaId = ideaId;
+  item.calendarDate = date;
+}
+
+function wireRepoCalendar() {
+  document.getElementById("btn-repo-cal-no").addEventListener("click", () => {
+    repoCloseCalendarStep();
+  });
+  document.getElementById("btn-repo-cal-yes").addEventListener("click", () => {
+    document.getElementById("repo-cal-choice").style.display = "none";
+    document.getElementById("repo-cal-form").style.display = "block";
+  });
+  document.getElementById("btn-repo-cal-cancel").addEventListener("click", () => {
+    repoCloseCalendarStep();
+  });
+  document.getElementById("repo-cal-type").addEventListener("click", (e) => {
+    const chip = e.target.closest("[data-caltype]");
+    if (!chip) return;
+    repoCalType = chip.dataset.caltype;
+    repoRenderCalType();
+  });
+  document.getElementById("btn-repo-cal-add").addEventListener("click", () => {
+    const dateEl = document.getElementById("repo-cal-date");
+    if (!dateEl.value) { dateEl.focus(); return; }
+    const item = STATE.repository.find((i) => i.id === repoCalItemId);
+    if (!item) return;
+    addRepoItemToCalendar(item, dateEl.value, repoCalType);
+    saveToStorage();
+    renderRepoStats();
+    renderRepository();
+    document.getElementById("repo-cal-form").style.display = "none";
+    document.getElementById("repo-cal-saved").style.display = "none";
+    document.getElementById("repo-cal-done-msg").textContent =
+      `✓ Added to the homepage calendar for ${fmtShortDate(dateEl.value)}.`;
+    document.getElementById("repo-cal-done").style.display = "block";
+    document.getElementById("repo-cal-done").dataset.date = dateEl.value;
+  });
+  document.getElementById("btn-repo-cal-close").addEventListener("click", repoCloseCalendarStep);
+  document.getElementById("btn-repo-cal-go").addEventListener("click", () => {
+    const date = document.getElementById("repo-cal-done").dataset.date;
+    repoCloseCalendarStep();
+    STATE.currentBoard = "random";
+    viewWeekStart = startOfWeek(new Date(date + "T00:00:00"));
+    calendarViewMode = "week";
+    setViewToggleUI();
+    syncTabUI();
+    saveToStorage();
+    render();
+  });
 }
 
 function wireRepository() {
@@ -1284,6 +1421,7 @@ function wireRepository() {
       return;
     }
 
+    let newRepoId = null;
     if (repoEditingId) {
       const item = STATE.repository.find((i) => i.id === repoEditingId);
       if (item) {
@@ -1300,12 +1438,16 @@ function wireRepository() {
       };
       if (series) entry.series = series;
       STATE.repository.push(entry);
+      newRepoId = entry.id;
       input.value = "";
     }
     repoCloseMediumStep();
     saveToStorage();
     render();
+    if (newRepoId) repoOpenCalendarStep(newRepoId, true);
   });
+
+  wireRepoCalendar();
 
   document.getElementById("repo-filter").addEventListener("click", (e) => {
     const chip = e.target.closest("[data-filter]");
@@ -1324,6 +1466,10 @@ function wireRepository() {
       STATE.repository = STATE.repository.filter((i) => i.id !== item.id);
       saveToStorage();
       render();
+    } else if (btn.dataset.repoAction === "calendar") {
+      repoOpenCalendarStep(item.id, false);
+      document.getElementById("repo-view").scrollTop = 0;
+      window.scrollTo(0, 0);
     } else if (btn.dataset.repoAction === "refile") {
       repoEditingId = item.id;
       input.value = item.text;

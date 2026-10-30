@@ -790,7 +790,7 @@
   }
   .medium-chip:hover { background: var(--sage-tint); border-color: var(--sage); }
   .medium-chip.selected { background: var(--sage); border-color: var(--sage-dark); color: #fff; }
-  #repo-other-medium, #repo-series-name {
+  #repo-other-medium, #repo-series-name, #repo-cal-date {
     margin-top: 10px;
     width: 100%;
     max-width: 320px;
@@ -840,6 +840,21 @@
     border-radius: 999px;
   }
   .repo-tag.none { background: var(--gray-tint); color: var(--ink-soft); }
+  .repo-tag.cal { background: var(--clay-tint); color: var(--clay-dark); }
+  .repo-cal-quote {
+    font-size: 13px;
+    color: var(--ink-soft);
+    background: var(--paper);
+    border-left: 3px solid var(--sage);
+    padding: 6px 10px;
+    margin: 8px 0 12px;
+    border-radius: 0 6px 6px 0;
+    white-space: pre-wrap;
+    max-height: 90px;
+    overflow: hidden;
+  }
+  .repo-cal-label { font-size: 12px; color: var(--ink-soft); display: block; margin: 12px 0 6px; }
+  #repo-cal-date { margin-top: 0; }
   .repo-date { font-size: 11px; color: var(--ink-soft); margin-left: 4px; }
   .repo-item-actions { display: flex; gap: 4px; flex: 0 0 auto; }
   .repo-icon-btn {
@@ -1000,13 +1015,13 @@
   <header>
     <div class="title-block">
       <h1>Communic8 — Marketing &amp; Sales Board</h1>
-      <span class="subtitle">everything you could try, held loosely</span>
+      <span class="subtitle">utilisable sales strategies</span>
     </div>
     <div class="stats" id="header-stats"></div>
   </header>
 
   <div id="board-tabs">
-    <button class="board-tab active" data-board="random">Random sales strategies</button>
+    <button class="board-tab active" data-board="random">Homepage</button>
     <button class="board-tab" data-board="content">Content creation / marketing</button>
     <button class="board-tab" data-board="f2f">F2F sales campaigns</button>
     <button class="board-tab" data-board="repository">Ideas repository</button>
@@ -1078,6 +1093,39 @@
           <div class="repo-medium-actions">
             <button class="btn" id="btn-repo-cancel">Cancel</button>
             <button class="btn primary" id="btn-repo-save">Save to repository</button>
+          </div>
+        </div>
+
+        <div class="repo-medium" id="repo-calendar" style="display:none;">
+          <div class="repo-q-hint" id="repo-cal-saved" style="color:var(--sage-dark); font-weight:600; margin-bottom:4px;">✓ Saved to the repository.</div>
+          <div class="repo-q">Do you wish to add this to the homepage calendar?</div>
+          <div class="repo-cal-quote" id="repo-cal-quote"></div>
+
+          <div class="repo-medium-actions" id="repo-cal-choice">
+            <button class="btn" id="btn-repo-cal-no">Not now</button>
+            <button class="btn primary" id="btn-repo-cal-yes">Yes, add it</button>
+          </div>
+
+          <div id="repo-cal-form" style="display:none;">
+            <label class="repo-cal-label" for="repo-cal-date">Which date?</label>
+            <input id="repo-cal-date" type="date" />
+            <label class="repo-cal-label">What will you do with it?</label>
+            <div class="medium-chips" id="repo-cal-type">
+              <button type="button" class="medium-chip" data-caltype="application">Do it — take an action</button>
+              <button type="button" class="medium-chip" data-caltype="creation">Build it — make something</button>
+            </div>
+            <div class="repo-medium-actions">
+              <button class="btn" id="btn-repo-cal-cancel">Cancel</button>
+              <button class="btn primary" id="btn-repo-cal-add">Add to calendar</button>
+            </div>
+          </div>
+
+          <div id="repo-cal-done" style="display:none;">
+            <div class="repo-q-hint" id="repo-cal-done-msg" style="margin-top:4px;"></div>
+            <div class="repo-medium-actions">
+              <button class="btn" id="btn-repo-cal-close">Stay here</button>
+              <button class="btn primary" id="btn-repo-cal-go">Go to homepage</button>
+            </div>
           </div>
         </div>
       </div>
