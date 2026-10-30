@@ -21,7 +21,19 @@ const BOARDS = [
   { id: "random", label: "Random sales strategies", subtitle: "everything you could try, held loosely" },
   { id: "content", label: "Content creation / marketing", subtitle: "posts, videos, and pieces to make" },
   { id: "f2f", label: "F2F sales campaigns", subtitle: "in-person pitches, meetups, and campaigns" },
+  // The repository isn't a canvas board: it's its own page (no categories,
+  // no calendar), so it's flagged `page` and skipped by the board logic.
+  { id: "repository", label: "Ideas repository", subtitle: "a place to drop ideas before they have a home", page: true },
 ];
+
+// Mediums offered when filing a repository idea ("Other" lets the person type their own).
+const REPO_MEDIUMS = [
+  "Video", "Social media post", "Email", "Newsletter", "Blog / article",
+  "Podcast", "Episode", "Webinar / live stream", "Face-to-face", "Phone call",
+  "Text / DM", "Print / flyer", "Event / workshop",
+];
+const REPO_OTHER = "Other";
+const REPO_EPISODE = "Episode"; // choosing this also asks for the series name
 const BOARD_DEFAULT_COLOR = { content: "amber", f2f: "clay" };
 // Where Mission Control (and its Do tab) lives -- used by "Send to Do" to
 // hand a content idea's brief description and strategic objective across.
@@ -33,6 +45,7 @@ let STATE = {
   children: [],         // [{id, ideaId, type: 'creation'|'application', done:false, scheduledDate: null|'YYYY-MM-DD', parked:false, canvasX, canvasY}]
   canvasPositions: {}, // ideaId -> {x,y}  (idea card positions on canvas)
   currentBoard: "random",
+  repository: [],      // [{id, text, mediums:[string], created:ISO}]
 };
 
 let viewWeekStart = startOfWeek(new Date());
@@ -79,7 +92,7 @@ function migrateState() {
     if (!c.board) c.board = "random";
   });
   BOARDS.forEach((b) => {
-    if (b.id === "random") return;
+    if (b.id === "random" || b.page) return;
     const hasCategory = STATE.categories.some((c) => c.board === b.id);
     if (!hasCategory) {
       STATE.categories.push({
@@ -91,6 +104,7 @@ function migrateState() {
     }
   });
   if (!STATE.currentBoard) STATE.currentBoard = "random";
+  if (!Array.isArray(STATE.repository)) STATE.repository = [];
 }
 
 /* ---------------------------------------------------------- */
@@ -121,14 +135,27 @@ function wireBoardTabs() {
       const boardId = btn.dataset.board;
       if (boardId === STATE.currentBoard) return;
       STATE.currentBoard = boardId;
-      document.querySelectorAll(".board-tab").forEach((b) => b.classList.toggle("active", b.dataset.board === boardId));
-      const board = BOARDS.find((b) => b.id === boardId);
-      const subtitleEl = document.querySelector("header .subtitle");
-      if (board && subtitleEl) subtitleEl.textContent = board.subtitle;
+      syncTabUI();
       saveToStorage();
       render();
     });
   });
+  syncTabUI();
+}
+
+/* Highlights the active tab, updates the subtitle, and swaps between the  */
+/* canvas/calendar layout and the repository page. Also runs on load so a  */
+/* reopened app lands on the tab it was last left on.                      */
+function syncTabUI() {
+  const boardId = STATE.currentBoard;
+  document.querySelectorAll(".board-tab").forEach((b) => b.classList.toggle("active", b.dataset.board === boardId));
+  const board = BOARDS.find((b) => b.id === boardId);
+  const subtitleEl = document.querySelector("header .subtitle");
+  if (board && subtitleEl) subtitleEl.textContent = board.subtitle;
+  const isRepo = !!(board && board.page);
+  document.getElementById("toolbar").style.display = isRepo ? "none" : "";
+  document.getElementById("main-split").style.display = isRepo ? "none" : "";
+  document.getElementById("repo-view").style.display = isRepo ? "block" : "none";
 }
 
 function loadFromStorage() {
@@ -280,6 +307,12 @@ function monthGridWeeks(monthStart) {
 /* ---------------------------------------------------------- */
 
 function render() {
+  const board = BOARDS.find((b) => b.id === STATE.currentBoard);
+  if (board && board.page) {
+    renderRepoStats();
+    renderRepository();
+    return;
+  }
   renderStats();
   renderCanvas();
   renderStaging();
@@ -789,6 +822,15 @@ function buildFullBoardEmailBody() {
     lines.push("");
   });
 
+  if (STATE.repository && STATE.repository.length) {
+    lines.push("=== Ideas repository ===");
+    STATE.repository.forEach((i) => {
+      lines.push(`• ${i.text.replace(/\s*\n\s*/g, " ")}`);
+      lines.push(`   Medium: ${(i.mediums || []).join(", ") || "—"}${i.series ? " (series: " + i.series + ")" : ""}`);
+    });
+    lines.push("");
+  }
+
   lines.push("");
   lines.push("---");
   lines.push("Raw data (for backup / re-import — do not edit by hand):");
@@ -1086,6 +1128,212 @@ function wireToolbar() {
   });
 }
 
+
+/* ---------------------------------------------------------- */
+/* Ideas repository                                              */
+/* Step 1: type the idea.  Step 2: choose the medium(s) it       */
+/* relates to.  Only then is it saved. Stored in                 */
+/* STATE.repository, so it persists and is included in the full  */
+/* board backup email alongside everything else.                 */
+/* ---------------------------------------------------------- */
+
+let repoPendingMediums = [];   // mediums chosen in the open step-2 prompt
+let repoFilterMedium = null;   // null = show all
+let repoEditingId = null;      // id of the idea being re-filed, or null when adding
+
+function renderRepoStats() {
+  const list = STATE.repository;
+  const tagged = list.filter((i) => i.mediums && i.mediums.length).length;
+  document.getElementById("header-stats").innerHTML = `
+    <span><b>${list.length}</b> ideas captured</span>
+    <span><b>${tagged}</b> with a medium</span>
+  `;
+}
+
+function repoAllMediums() {
+  // preset list + any custom "Other" mediums already used, so they can be filtered/re-picked
+  const custom = [];
+  STATE.repository.forEach((i) => (i.mediums || []).forEach((m) => {
+    if (!REPO_MEDIUMS.includes(m) && !custom.includes(m)) custom.push(m);
+  }));
+  return REPO_MEDIUMS.concat(custom);
+}
+
+function renderRepoMediumChips() {
+  const wrap = document.getElementById("repo-medium-chips");
+  const all = repoAllMediums().concat([REPO_OTHER]);
+  wrap.innerHTML = all.map((m) => {
+    const selected = m === REPO_OTHER
+      ? repoPendingMediums.includes(REPO_OTHER)
+      : repoPendingMediums.includes(m);
+    return `<button type="button" class="medium-chip${selected ? " selected" : ""}" data-medium="${escapeHtml(m)}">${escapeHtml(m)}</button>`;
+  }).join("");
+  document.getElementById("repo-other-medium").style.display = repoPendingMediums.includes(REPO_OTHER) ? "block" : "none";
+  document.getElementById("repo-series-name").style.display = repoPendingMediums.includes(REPO_EPISODE) ? "block" : "none";
+}
+
+function renderRepository() {
+  // filter chips
+  const used = [];
+  STATE.repository.forEach((i) => (i.mediums || []).forEach((m) => { if (!used.includes(m)) used.push(m); }));
+  const filterEl = document.getElementById("repo-filter");
+  if (!used.length) {
+    filterEl.innerHTML = "";
+  } else {
+    filterEl.innerHTML =
+      `<button type="button" class="medium-chip${repoFilterMedium === null ? " selected" : ""}" data-filter="">All</button>` +
+      used.map((m) => `<button type="button" class="medium-chip${repoFilterMedium === m ? " selected" : ""}" data-filter="${escapeHtml(m)}">${escapeHtml(m)}</button>`).join("");
+  }
+  if (repoFilterMedium !== null && !used.includes(repoFilterMedium)) repoFilterMedium = null;
+
+  const items = STATE.repository
+    .filter((i) => repoFilterMedium === null || (i.mediums || []).includes(repoFilterMedium))
+    .slice()
+    .sort((a, b) => (a.created < b.created ? 1 : -1)); // newest first
+
+  document.getElementById("repo-count").textContent = STATE.repository.length ? `(${items.length}${repoFilterMedium !== null ? " of " + STATE.repository.length : ""})` : "";
+
+  const list = document.getElementById("repo-list");
+  if (!items.length) {
+    list.innerHTML = `<div class="repo-empty">${STATE.repository.length ? "No ideas with that medium yet." : "Nothing here yet. Add your first idea above."}</div>`;
+    return;
+  }
+  list.innerHTML = items.map((i) => {
+    const tags = (i.mediums && i.mediums.length)
+      ? i.mediums.map((m) => `<span class="repo-tag">${escapeHtml(m === REPO_EPISODE && i.series ? m + " · " + i.series : m)}</span>`).join("")
+      : `<span class="repo-tag none">No medium</span>`;
+    const when = i.created ? new Date(i.created).toLocaleDateString(undefined, { day: "numeric", month: "short", year: "numeric" }) : "";
+    return `
+      <div class="repo-item" data-repo-id="${i.id}">
+        <div class="repo-item-body">
+          <div class="repo-item-text">${escapeHtml(i.text)}</div>
+          <div class="repo-item-meta">${tags}<span class="repo-date">${when}</span></div>
+        </div>
+        <div class="repo-item-actions">
+          <button class="repo-icon-btn edit" data-repo-action="refile" data-id="${i.id}" title="Change medium">Change medium</button>
+          <button class="repo-icon-btn" data-repo-action="delete" data-id="${i.id}" title="Delete this idea">✕</button>
+        </div>
+      </div>`;
+  }).join("");
+}
+
+function repoOpenMediumStep(existing) {
+  repoPendingMediums = existing ? existing.mediums.slice() : [];
+  // a previously-saved custom medium is just a chip of its own; nothing to retype
+  document.getElementById("repo-other-medium").value = "";
+  document.getElementById("repo-series-name").value = (existing && existing.series) || "";
+  renderRepoMediumChips();
+  document.getElementById("repo-medium").style.display = "block";
+  document.getElementById("repo-step1-actions").style.display = "none";
+  document.getElementById("repo-idea-input").readOnly = true;
+  document.getElementById("repo-medium").scrollIntoView({ block: "nearest", behavior: "smooth" });
+}
+
+function repoCloseMediumStep() {
+  document.getElementById("repo-medium").style.display = "none";
+  document.getElementById("repo-step1-actions").style.display = "flex";
+  document.getElementById("repo-idea-input").readOnly = false;
+  repoPendingMediums = [];
+  repoEditingId = null;
+}
+
+function wireRepository() {
+  const input = document.getElementById("repo-idea-input");
+
+  document.getElementById("btn-repo-next").addEventListener("click", () => {
+    if (!input.value.trim()) { input.focus(); return; }
+    repoEditingId = null;
+    repoOpenMediumStep(null);
+  });
+
+  document.getElementById("btn-repo-cancel").addEventListener("click", () => {
+    // when re-filing an existing idea, the textarea was just a stand-in for it
+    if (repoEditingId) input.value = "";
+    repoCloseMediumStep();
+  });
+
+  document.getElementById("repo-medium-chips").addEventListener("click", (e) => {
+    const chip = e.target.closest(".medium-chip");
+    if (!chip) return;
+    const m = chip.dataset.medium;
+    const idx = repoPendingMediums.indexOf(m);
+    if (idx === -1) repoPendingMediums.push(m); else repoPendingMediums.splice(idx, 1);
+    renderRepoMediumChips();
+    if (idx === -1 && m === REPO_OTHER) document.getElementById("repo-other-medium").focus();
+    if (idx === -1 && m === REPO_EPISODE) document.getElementById("repo-series-name").focus();
+  });
+
+  document.getElementById("btn-repo-save").addEventListener("click", () => {
+    let mediums = repoPendingMediums.filter((m) => m !== REPO_OTHER);
+    if (repoPendingMediums.includes(REPO_OTHER)) {
+      const custom = document.getElementById("repo-other-medium").value.trim();
+      if (!custom) { document.getElementById("repo-other-medium").focus(); return; }
+      if (!mediums.includes(custom)) mediums.push(custom);
+    }
+    let series = "";
+    if (repoPendingMediums.includes(REPO_EPISODE)) {
+      series = document.getElementById("repo-series-name").value.trim();
+      if (!series) { document.getElementById("repo-series-name").focus(); return; }
+    }
+    if (!mediums.length) {
+      // the question is the point of this step -- don't let it be skipped silently
+      document.getElementById("repo-medium-chips").animate(
+        [{ transform: "translateX(0)" }, { transform: "translateX(-4px)" }, { transform: "translateX(4px)" }, { transform: "translateX(0)" }],
+        { duration: 200 }
+      );
+      return;
+    }
+
+    if (repoEditingId) {
+      const item = STATE.repository.find((i) => i.id === repoEditingId);
+      if (item) {
+        item.mediums = mediums;
+        if (series) item.series = series; else delete item.series;
+      }
+      input.value = "";
+    } else {
+      const entry = {
+        id: "repo_" + Date.now(),
+        text: input.value.trim(),
+        mediums,
+        created: new Date().toISOString(),
+      };
+      if (series) entry.series = series;
+      STATE.repository.push(entry);
+      input.value = "";
+    }
+    repoCloseMediumStep();
+    saveToStorage();
+    render();
+  });
+
+  document.getElementById("repo-filter").addEventListener("click", (e) => {
+    const chip = e.target.closest("[data-filter]");
+    if (!chip) return;
+    repoFilterMedium = chip.dataset.filter === "" ? null : chip.dataset.filter;
+    renderRepository();
+  });
+
+  document.getElementById("repo-list").addEventListener("click", (e) => {
+    const btn = e.target.closest("[data-repo-action]");
+    if (!btn) return;
+    const item = STATE.repository.find((i) => i.id === btn.dataset.id);
+    if (!item) return;
+    if (btn.dataset.repoAction === "delete") {
+      if (!confirm("Delete this idea from the repository?")) return;
+      STATE.repository = STATE.repository.filter((i) => i.id !== item.id);
+      saveToStorage();
+      render();
+    } else if (btn.dataset.repoAction === "refile") {
+      repoEditingId = item.id;
+      input.value = item.text;
+      repoOpenMediumStep(item);
+      window.scrollTo(0, 0);
+      document.getElementById("repo-view").scrollTop = 0;
+    }
+  });
+}
+
 /* ---------------------------------------------------------- */
 /* Go                                                              */
 /* ---------------------------------------------------------- */
@@ -1096,6 +1344,7 @@ function init() {
   wireToolbar();
   wireCanvasDragController();
   wireEmailActions();
+  wireRepository();
   boot();
 }
 
